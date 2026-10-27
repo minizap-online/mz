@@ -16,11 +16,19 @@ export interface CompanyRepositoryOptions {
   env?: Readonly<Record<string, string | undefined>>;
 }
 
+export interface CompanyReadOptions {
+  rejectLinks?: boolean;
+  normalizeLineEndings?: boolean;
+}
+
 export interface CompanyRepository {
   readonly root: string;
   readonly config: CompanyConfig;
-  readYaml(path: string): Promise<Metadata>;
-  readMarkdown(path: string): Promise<{ metadata: Metadata; body: string }>;
+  readYaml(path: string, options?: CompanyReadOptions): Promise<Metadata>;
+  readMarkdown(
+    path: string,
+    options?: CompanyReadOptions,
+  ): Promise<{ metadata: Metadata; body: string }>;
 }
 
 export type CompanyRepositoryErrorCode =

@@ -1,3 +1,4 @@
+import { runContextCli } from './context.js';
 import { runInboxCli } from './inbox.js';
 import { runIngestCli } from './ingest.js';
 import { runDoctorCli } from './doctor.js';
@@ -13,6 +14,7 @@ Usage: mz [--help | --version]
        mz doctor [options]
        mz ingest FILE [options]
        mz inbox [list | inspect | history | triage] [options]
+       mz context --role ROLE --task TASK [options]
 
 Options:
   -h, --help     Show this help (also: mz help)
@@ -22,12 +24,14 @@ Commands:
   doctor        Inspect environment and existing state (mz doctor --help)
   ingest        Import private Markdown from a file or stdin (mz ingest --help)
   inbox         List, inspect and triage private intake (mz inbox --help)
+  context       Compile bounded relevant company context (mz context --help)
 `;
 
 export async function runCli(
   args: readonly string[],
   version: string,
 ): Promise<CliResult> {
+  if (args[0] === 'context') return runContextCli(args.slice(1));
   if (args[0] === 'inbox') return runInboxCli(args.slice(1));
   if (args[0] === 'ingest') return runIngestCli(args.slice(1));
   if (args[0] === 'doctor') return runDoctorCli(args.slice(1));

@@ -4,6 +4,7 @@ export type {
   CompanyConfig,
   CompanyRepository,
   CompanyRepositoryOptions,
+  CompanyReadOptions,
   CompanyRepositoryErrorCode,
   Metadata,
   MetadataValue,
@@ -111,3 +112,5 @@ export type {
   InboxInspectOptions,
   InboxChangesOptions,
 } from '@mz/state';
+
+export { containsObviousCredential } from './secrets/checks.js';

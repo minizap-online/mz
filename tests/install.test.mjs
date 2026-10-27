@@ -165,6 +165,32 @@ test('clean install exposes mz and the Core runtime API from another directory',
       assert.equal(JSON.parse(inbox.stdout).classification, expected);
       assert.doesNotMatch(inbox.stdout, /Installation fixture/);
     }
+    for (const [relative, content] of [
+      ['COMPANY.md', 'Company fixture.\n'],
+      ['AUTHORITY.md', 'Execution requires assigned authority.\n'],
+      ['roles/developer.md', 'Developer fixture.\n'],
+      ['policies/security-baseline.md', 'Symbolic references only.\n'],
+      ['tasks/example.md', 'Task fixture.\n'],
+    ]) {
+      mkdirSync(join(fresh, relative.split('/').slice(0, -1).join('/')), {
+        recursive: true,
+      });
+      writeFileSync(join(fresh, relative), content);
+    }
+    const context = spawnSync(
+      join(fresh, 'node_modules/.bin/mz'),
+      ['context', '--role', 'developer', '--task', 'example', '--json'],
+      {
+        cwd: tmpdir(),
+        encoding: 'utf8',
+        env: { PATH: process.env.PATH, MZ_COMPANY_DIR: fresh },
+        timeout: 5000,
+      },
+    );
+    assert.ifError(context.error);
+    assert.equal(context.status, 0, context.stderr);
+    assert.equal(context.stderr, '');
+    assert.equal(JSON.parse(context.stdout).selection.task, 'example');
   } finally {
     rmSync(fresh, { recursive: true, force: true });
   }

@@ -2,7 +2,7 @@
 
 ## Bootstrap boundary
 
-M-00 contains an npm workspace with ESM TypeScript packages and a CLI originally supporting help/version; FR-007 adds diagnostic doctor. Core now provides the FR-002 read-only company loader; FR-003 adds SQLite through Core; context remains a placeholder; FR-006 adds neutral provider contracts in Core and an offline GitHub skeleton with an injected audit contract. See [providers](providers.md). The CLI reads its own package metadata relative to the executable, works from an unrelated directory, and requires no company or runtime initialization.
+M-00 contains an npm workspace with ESM TypeScript packages and a CLI originally supporting help/version; FR-007 adds diagnostic doctor. Core now provides the FR-002 read-only company loader; FR-003 adds SQLite through Core; FR-010 adds deterministic selected context compilation; FR-006 adds neutral provider contracts in Core and an offline GitHub skeleton with an injected audit contract. See [providers](providers.md). The CLI reads its own package metadata relative to the executable, works from an unrelated directory, and requires no company or runtime initialization.
 
 Core will own domain types, capabilities, and access to runtime state. CLI, context compilation, state adapters, and providers remain separate packages. Provider and LLM details must not enter the domain. The worker skill will call MZ rather than duplicate its logic.
 
@@ -31,3 +31,7 @@ Persist symbolic secret references only. Credential values must never enter Git,
 ## Environment diagnostics
 
 FR-007 adds [doctor](doctor.md), including read-only existing-state inspection through Core, shared backup data-age policy, explicit host-secret access checks, worker prerequisites and opt-in GitHub identity probing. An offline/unavailable integration remains unavailable. Diagnostics do not initialize or migrate stores, repair configuration, provision credentials or grant authority.
+
+## Context compilation
+
+[FR-010 context](context.md) reads an explicit role/project/task graph through Core strict company reads, with normalized digests, hard output/source limits and no provider/model/runtime activity. Context is informational; assigned identity/capabilities and human activation remain separate. No raw inbox content or unrelated project/process material is selected.

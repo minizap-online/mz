@@ -11,6 +11,7 @@
     "mz": "./bin/mz.js"
   },
   "dependencies": {
-    "@mz/core": "0.1.0"
+    "@mz/core": "0.1.0",
+    "@mz/context": "0.1.0"
   }
 }
