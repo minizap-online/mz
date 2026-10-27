@@ -2,7 +2,7 @@
 
 ## Bootstrap boundary
 
-M-00 contains an npm workspace with ESM TypeScript packages and a CLI supporting only help/version. Other packages export empty modules. The CLI reads its own package metadata relative to the executable, works from an unrelated directory, and requires no company or runtime initialization.
+M-00 contains an npm workspace with ESM TypeScript packages and a CLI supporting only help/version. Core now provides the FR-002 read-only company loader; state, context, and provider packages still export empty modules. The CLI reads its own package metadata relative to the executable, works from an unrelated directory, and requires no company or runtime initialization.
 
 Core will own domain types, capabilities, and access to runtime state. CLI, context compilation, state adapters, and providers remain separate packages. Provider and LLM details must not enter the domain. The worker skill will call MZ rather than duplicate its logic.
 
@@ -26,4 +26,4 @@ Persist symbolic secret references only. Credential values must never enter Git,
 
 ## Manual company scaffolding
 
-`templates/company` is a documentation starter, not a parsed schema or enforced capability model. Copy it into a separate private repository, replace placeholders, and review authority with the owner. No loader or activation command exists yet.
+`templates/company/company.yaml` uses the initial parsed company schema. The other files remain documentation scaffolding, not an enforced capability model. Copy into a separate private repository, replace placeholders, and review authority with the owner. The read-only [Core loader](company-repository.md) supports selected metadata reads; no activation command exists yet.
