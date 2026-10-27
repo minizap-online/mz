@@ -15,3 +15,5 @@ Validation before independent review: `npm run check` passed all 402 tests, buil
 The host must provision and correctly pair private company/runtime/artifact storage and scoped interfaces; actor/worker/approval UUIDs alone confer no authority. Account/model access, transmission consent, spending, deployment, encrypted artifact backup and live provider connectivity remain operational prerequisites. Cross-store failures retain private orphan/pending evidence for explicit trusted recovery, with no automatic retry, deletion or fabricated success. See [steward contracts and limits](steward.md).
 
 Independent whole-branch review completed. A rendered-status indentation overflow was fixed with an observed failing regression and bounded compact fallback; final full checks passed 403/403 tests plus build/lint/format/typecheck. No deferred review findings remain.
+
+PR #27 merged as `476036d` after exact-feature-head push and pull-request CI success. Local main then passed all 403 tests/build/lint/format checks and typecheck. FR-012 remains open/Review solely for the real authorized pilot-start evidence.

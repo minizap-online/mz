@@ -37,7 +37,7 @@
 
 - [x] Documentation, current interface/recording contracts, operational limits and concrete real-pilot handoff.
 - [x] Independent review and regression fixes; check/typecheck/diff/links/skill validation.
-- [ ] PR/CI/merge/main verification, issue/Project evidence; keep real-pilot acceptance unproven until actual human-authorized start.
+- [x] PR/CI/merge/main verification, issue/Project evidence; keep real-pilot acceptance unproven until actual human-authorized start.
 - [ ] Request only the necessary missing pilot/operational authorization once concrete reviewable work is ready. No speculative M-05+ functionality.
 
 ## Ledger
@@ -61,3 +61,5 @@
 - Final: Ruling: deployed artifact backups and actual pilot activation remain unverified prerequisites — development fixtures are not operational acceptance. Cost if wrong: live operation without provisioning could lose private continuity or activate unauthorized work.
 
 - Final: fixed rendered-status bound — regression failed at 222+ KiB then passed with compact fallback; full npm run check passed 403/403 tests, build/lint/format and npm run typecheck passed. No deferred Minor findings remain. The one fresh review is complete; no second review requested.
+
+- Task 3 implementation integration complete: PR27 merged as 476036d after exact-head push/PR CI success. Main npm run check passed 403/403 and typecheck passed. Human real-pilot start remains pending; no later automation is authorized by synthetic evidence. Request the concrete owner idea/scope at handoff.
