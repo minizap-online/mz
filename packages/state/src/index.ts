@@ -45,3 +45,26 @@ export type {
 } from './intake-types.js';
 
 export { inboxScope as parseInboxScope } from './records.js';
+
+export { INBOX_CLASSIFICATIONS } from './inbox-types.js';
+export type {
+  InboxClassification,
+  InboxDetails,
+  InboxTriageChange,
+  InboxCursor,
+  InboxHistoryCursor,
+  TriageInboxItem,
+} from './inbox-types.js';
+
+export { parseInboxClassification } from './inbox.js';
+
+export {
+  listSqliteInbox,
+  inspectSqliteInboxItem,
+  listSqliteInboxChanges,
+} from './inbox-reader.js';
+export type {
+  InboxListOptions,
+  InboxInspectOptions,
+  InboxChangesOptions,
+} from './inbox-reader.js';

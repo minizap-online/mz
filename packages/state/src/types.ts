@@ -1,3 +1,10 @@
+import type {
+  InboxDetails,
+  InboxTriageChange,
+  InboxCursor,
+  InboxHistoryCursor,
+  TriageInboxItem,
+} from './inbox-types.js';
 import type { NewInboxIntake, InboxIntake } from './intake-types.js';
 import type {
   BackupRecord,
@@ -93,6 +100,10 @@ export interface EventCursor {
   limit?: number;
 }
 export interface RuntimeTransaction {
+  getInboxDetails(id: string): InboxDetails | null;
+  listInbox(cursor?: InboxCursor): InboxDetails[];
+  listInboxChanges(cursor: InboxHistoryCursor): InboxTriageChange[];
+  triageInboxItem(input: TriageInboxItem): InboxDetails;
   appendEvent(input: NewRuntimeEvent): RuntimeEvent;
   createInboxItem(input: NewInboxItem): InboxItem;
   startRun(input: StartRun): RuntimeRun;
@@ -128,6 +139,7 @@ export type RuntimeStateErrorCode =
   | 'TRANSACTION_ACTIVE'
   | 'TRANSACTION_FAILED'
   | 'EXPIRED_TRANSACTION'
+  | 'INBOX_NOT_FOUND'
   | 'RUN_NOT_FOUND'
   | 'RUN_FINISHED';
 export class RuntimeStateError extends Error {
@@ -162,6 +174,7 @@ const SAFE_MESSAGES: Record<RuntimeStateErrorCode, string> = {
   TRANSACTION_FAILED: 'The transaction failed and was rolled back.',
   EXPIRED_TRANSACTION:
     'The transaction API is valid only during its synchronous callback.',
+  INBOX_NOT_FOUND: 'The referenced inbox item does not exist.',
   RUN_NOT_FOUND: 'Start the referenced run before finishing it.',
   RUN_FINISHED: 'A completed run cannot be finished again.',
 };
@@ -181,6 +194,10 @@ const SAFE_FIELDS = [
   'afterSequence',
   'limit',
   'path',
+  'classification',
+  'scope',
+  'triaged',
+  'changedAt',
 ];
 
 export function stateError(

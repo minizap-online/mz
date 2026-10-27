@@ -68,7 +68,7 @@ Callbacks must be synchronous. Async functions and returned thenables fail; tran
 
 ## Schema and errors
 
-Current schema is [v3](../schemas/runtime-state-v3.md), extending [v2](../schemas/runtime-state-v2.md) and [v1 and its migration rules](../schemas/runtime-state-v1.md). Reopening is idempotent. Foreign databases, unsupported future versions, modified checksums, and altered schema objects fail rather than being treated as an empty database. There is no automatic migration repair or downgrade.
+Current schema is [v4](../schemas/runtime-state-v4.md), extending [v3](../schemas/runtime-state-v3.md), [v2](../schemas/runtime-state-v2.md) and [v1 and its migration rules](../schemas/runtime-state-v1.md). Reopening is idempotent. Foreign databases, unsupported future versions, modified checksums, and altered schema objects fail rather than being treated as an empty database. There is no automatic migration repair or downgrade.
 
 `RuntimeStateError` provides a stable code and optional known field name. Boundary errors never retain raw SQL, driver messages, callback messages/causes, or offending values. Catch and report the safe error rather than logging the rejected input.
 
@@ -92,3 +92,5 @@ Tests create temporary synthetic databases. They verify migrations/rollback, sch
 FR-007 adds Core `inspectRuntimeState({path, now?, maxAgeMs?})`: inspect an existing current-schema regular absolute database with read-only SQLite access, migration/schema/integrity/FK/WAL checks and shared backup freshness under one read transaction. It never creates a missing main file, migrates, repairs, or appends events. SQLite may manage WAL sidecars. Old/foreign/empty/drifted files fail safely. See [doctor](doctor.md) for CLI checks and limitations.
 
 FR-008 preserves the original InboxItem shape and adds optional typed intake metadata/read operations in a separate table. See [intake](intake.md); raw source files are outside Git/SQLite and need independent private backup/retention.
+
+FR-009 adds bounded private inbox views and append-only local triage snapshots/event linkage, preserving original intake provenance. Specialized CLI read functions never initialize/migrate state. See [inbox](inbox.md) and schema v4.

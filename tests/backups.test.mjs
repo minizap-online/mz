@@ -92,6 +92,15 @@ test('encrypted fixture backup restores standalone run/inbox/event data through 
   const f = await fixture(t);
   const run = f.state.startRun({ actorId, workerId });
   const item = f.state.createInboxItem({ actorId, sourceId });
+  f.state.triageInboxItem({
+    id: item.id,
+    actorId,
+    classification: 'idea',
+    scope: 'company',
+    triaged: true,
+  });
+  const inboxBefore = f.state.getInboxDetails(item.id);
+  const changesBefore = f.state.listInboxChanges({ inboxItemId: item.id });
   const before = f.state.listEvents();
   const hook = encryptedFixtureHook(f.root);
   const result = await core.backupRuntimeState(request(f, hook));
@@ -119,6 +128,11 @@ test('encrypted fixture backup restores standalone run/inbox/event data through 
   assert.deepEqual(restored.verifyIntegrity(), { ok: true });
   assert.deepEqual(restored.getRun(run.id), run);
   assert.deepEqual(restored.getInboxItem(item.id), item);
+  assert.deepEqual(restored.getInboxDetails(item.id), inboxBefore);
+  assert.deepEqual(
+    restored.listInboxChanges({ inboxItemId: item.id }),
+    changesBefore,
+  );
   assert.deepEqual(restored.listEvents(), before);
   assert.equal(restored.getBackup(result.id).outcome, null);
 });
@@ -330,7 +344,7 @@ test('version-1 runtime databases upgrade with all prior records/history intact'
   db.close();
   const upgraded = core.openRuntimeState({ path: f.path });
   t.after(() => upgraded.close());
-  assert.equal(upgraded.getStatus().schemaVersion, 3);
+  assert.equal(upgraded.getStatus().schemaVersion, 4);
   assert.equal(upgraded.getInboxItem(sourceId).sourceId, actorId);
   assert.deepEqual(upgraded.getRun(workerId), {
     id: workerId,

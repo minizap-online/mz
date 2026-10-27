@@ -4,7 +4,7 @@ MZ is a small MIT-licensed organization toolbox for humans and coding agents. It
 
 ## Current state
 
-The CLI implements help, version, [environment doctor](docs/doctor.md) and [private Markdown intake](docs/intake.md). Core provides a read-only [company repository loader](docs/company-repository.md) and [SQLite runtime state](docs/runtime-state.md) with migrations and atomic audit history. Core also provides [secret references and scoped host-file secret handling](docs/secrets.md). Core also provides the [backup hook and verified fixture restore contract](docs/backups.md). Context compilation, live GitHub work/source integration, and the agent skill are planned in later [milestones](docs/milestones.md). Core defines [neutral provider contracts](docs/providers.md); the GitHub package implements an audited offline skeleton. Context reserves its future implementation boundary.
+The CLI implements help, version, [environment doctor](docs/doctor.md), [private Markdown intake](docs/intake.md), and [inbox inspection/triage](docs/inbox.md). Core provides a read-only [company repository loader](docs/company-repository.md) and [SQLite runtime state](docs/runtime-state.md) with migrations and atomic audit history. Core also provides [secret references and scoped host-file secret handling](docs/secrets.md). Core also provides the [backup hook and verified fixture restore contract](docs/backups.md). Context compilation, live GitHub work/source integration, and the agent skill are planned in later [milestones](docs/milestones.md). Core defines [neutral provider contracts](docs/providers.md); the GitHub package implements an audited offline skeleton. Context reserves its future implementation boundary.
 
 ## Local development
 

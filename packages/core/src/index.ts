@@ -88,3 +88,26 @@ export type {
   IngestResult,
   IntakeErrorCode,
 } from './intake.js';
+
+export { INBOX_CLASSIFICATIONS } from '@mz/state';
+export type {
+  InboxClassification,
+  InboxDetails,
+  InboxTriageChange,
+  InboxCursor,
+  InboxHistoryCursor,
+  TriageInboxItem,
+} from '@mz/state';
+
+export { parseInboxClassification } from '@mz/state';
+
+export {
+  listSqliteInbox as listInbox,
+  inspectSqliteInboxItem as inspectInboxItem,
+  listSqliteInboxChanges as listInboxChanges,
+} from '@mz/state';
+export type {
+  InboxListOptions,
+  InboxInspectOptions,
+  InboxChangesOptions,
+} from '@mz/state';

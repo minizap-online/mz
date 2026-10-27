@@ -1,3 +1,9 @@
+import {
+  getInboxDetails,
+  listInbox,
+  listInboxChanges,
+  triageInboxItem,
+} from './inbox.js';
 import type { InboxIntake } from './intake-types.js';
 import { getBackupRecord, backupFreshness } from './backups.js';
 import { verifyDatabaseIntegrity } from './integrity.js';
@@ -335,6 +341,12 @@ export function createSqliteRuntimeState(
   }
   function scoped(scope: Scope): RuntimeTransaction {
     return Object.freeze({
+      getInboxDetails: (id) => perform(scope, () => getInboxDetails(db, id)),
+      listInbox: (input) => perform(scope, () => listInbox(db, input)),
+      listInboxChanges: (input) =>
+        perform(scope, () => listInboxChanges(db, input)),
+      triageInboxItem: (input) =>
+        perform(scope, () => triageInboxItem(db, input, appendEvent)),
       appendEvent: (input) => perform(scope, () => appendEvent(input)),
       createInboxItem: (input) => perform(scope, () => createInboxItem(input)),
       startRun: (input) => perform(scope, () => startRun(input)),
@@ -413,6 +425,11 @@ export function createSqliteRuntimeState(
     backupFreshness(db, input);
   const runtime = Object.freeze({
     getInboxIntake: (id) => query(() => getInboxIntake(id)),
+    getInboxDetails: (id) => query(() => getInboxDetails(db, id)),
+    listInbox: (input) => query(() => listInbox(db, input)),
+    listInboxChanges: (input) => query(() => listInboxChanges(db, input)),
+    triageInboxItem: (input) =>
+      transaction(() => triageInboxItem(db, input, appendEvent)),
     getBackup: (id) => query(() => getBackup(id)),
     getBackupFreshness: (policy) => query(() => freshness(policy)),
     verifyIntegrity: () =>

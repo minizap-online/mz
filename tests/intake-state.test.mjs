@@ -93,7 +93,7 @@ test('failure writing created event rolls back inbox and intake metadata', (t) =
   assert.equal(state.getInboxIntake(id), null);
   assert.deepEqual(state.listEvents(), []);
 });
-test('migration v2 to v3 preserves actual inbox, backup and linked event history', (t) => {
+test('migration v2 to current schema preserves actual inbox, backup and linked event history', (t) => {
   const { path, state } = fixture(t);
   state.close();
   rmSync(path);
@@ -119,7 +119,7 @@ test('migration v2 to v3 preserves actual inbox, backup and linked event history
   db.close();
   const upgraded = core.openRuntimeState({ path });
   t.after(() => upgraded.close());
-  assert.equal(upgraded.getStatus().schemaVersion, 3);
+  assert.equal(upgraded.getStatus().schemaVersion, 4);
   assert.deepEqual(upgraded.getInboxItem(id), { id, sourceId, receivedAt });
   assert.equal(upgraded.getInboxIntake(id), null);
   assert.equal(upgraded.getBackup(sourceId).outcome, 'succeeded');
