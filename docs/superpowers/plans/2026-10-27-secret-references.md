@@ -42,7 +42,7 @@ Files: packages/core/src/secrets/host-files.ts, docs/secrets.md, README.md, AGEN
 - [x] Implement POSIX ownership/permission checks, safe descriptor reads, and source-safe failures.
 - [x] Document host configuration, action lifetime, and primitive/redaction limits; no real host setup is performed.
 - [x] Run npm run check, typecheck, and diff check; record evidence and obtain independent review.
-- [ ] Fix concrete findings with regression tests; prepare PR, verify CI, merge, sync issue/Project, and verify main.
+- [x] Fix concrete findings with regression tests; prepare PR, verify CI, merge, sync issue/Project, and verify main.
 
 ## Execution ledger
 
@@ -57,3 +57,5 @@ Files: packages/core/src/secrets/host-files.ts, docs/secrets.md, README.md, AGEN
 - Check/typecheck/diff check pass; full suite 171/171. Independent review pending.
 
 - Independent review complete: no findings; 46/46 secret tests plus additional UTF-8/size/lifecycle/serialization probes passed. PR integration/CI remains before merge.
+
+- Task 2 integration complete: PR #19 merged at 28486c9 after both CI runs passed. Merged main check/typecheck pass, 171/171 tests. FR-004 Done; continue FR-005 under the active all-ticket goal.
