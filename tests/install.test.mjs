@@ -74,7 +74,7 @@ test('clean install exposes mz and the Core runtime API from another directory',
       if (typeof createGitHubProviderSkeleton !== 'function') throw new Error('GitHub skeleton unavailable');
       const state = openRuntimeState({ path: ${JSON.stringify(statePath)} });
       if (state.getStatus().journalMode !== 'wal') throw new Error('WAL unavailable');
-      if (state.getStatus().schemaVersion !== 3 || state.getBackupFreshness().status !== 'never' || !state.verifyIntegrity().ok || typeof backupRuntimeState !== 'function') throw new Error('backup API unavailable');
+      if (state.getStatus().schemaVersion !== 4 || state.getBackupFreshness().status !== 'never' || !state.verifyIntegrity().ok || typeof backupRuntimeState !== 'function') throw new Error('backup API unavailable');
       state.close();
       if (parseSecretRef('host:example') !== 'host:example' || typeof createHostFileSecretProvider !== 'function') throw new Error('secret API unavailable');
     `,
@@ -133,6 +133,38 @@ test('clean install exposes mz and the Core runtime API from another directory',
       readFileSync(join(sources, imported.item.sourceId, 'content.md'), 'utf8'),
       '# Installation fixture\n',
     );
+    for (const [args, expected] of [
+      [['inbox', 'inspect', imported.item.id, '--json'], 'unclassified'],
+      [
+        [
+          'inbox',
+          'triage',
+          imported.item.id,
+          '--classify',
+          'reference',
+          '--triaged',
+          '--json',
+        ],
+        'reference',
+      ],
+    ]) {
+      const inbox = spawnSync(join(fresh, 'node_modules/.bin/mz'), args, {
+        cwd: tmpdir(),
+        encoding: 'utf8',
+        env: {
+          PATH: process.env.PATH,
+          MZ_COMPANY_DIR: fresh,
+          MZ_RUNTIME_DB: statePath,
+          MZ_ACTOR_ID: '11111111-1111-4111-8111-111111111111',
+        },
+        timeout: 5000,
+      });
+      assert.ifError(inbox.error);
+      assert.equal(inbox.status, 0, inbox.stderr);
+      assert.equal(inbox.stderr, '');
+      assert.equal(JSON.parse(inbox.stdout).classification, expected);
+      assert.doesNotMatch(inbox.stdout, /Installation fixture/);
+    }
   } finally {
     rmSync(fresh, { recursive: true, force: true });
   }

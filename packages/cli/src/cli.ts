@@ -1,3 +1,4 @@
+import { runInboxCli } from './inbox.js';
 import { runIngestCli } from './ingest.js';
 import { runDoctorCli } from './doctor.js';
 export interface CliResult {
@@ -11,6 +12,7 @@ const help = `MZ — organization toolbox
 Usage: mz [--help | --version]
        mz doctor [options]
        mz ingest FILE [options]
+       mz inbox [list | inspect | history | triage] [options]
 
 Options:
   -h, --help     Show this help (also: mz help)
@@ -19,12 +21,14 @@ Options:
 Commands:
   doctor        Inspect environment and existing state (mz doctor --help)
   ingest        Import private Markdown from a file or stdin (mz ingest --help)
+  inbox         List, inspect and triage private intake (mz inbox --help)
 `;
 
 export async function runCli(
   args: readonly string[],
   version: string,
 ): Promise<CliResult> {
+  if (args[0] === 'inbox') return runInboxCli(args.slice(1));
   if (args[0] === 'ingest') return runIngestCli(args.slice(1));
   if (args[0] === 'doctor') return runDoctorCli(args.slice(1));
   if (

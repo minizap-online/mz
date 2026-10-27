@@ -56,7 +56,7 @@ test('inspection returns the same durable freshness policy without appending eve
   ]) {
     const policy = { now, maxAgeMs: 86400000 };
     const result = core.inspectRuntimeState({ path: f.path, ...policy });
-    assert.equal(result.schemaVersion, 3);
+    assert.equal(result.schemaVersion, 4);
     assert.equal(result.journalMode, 'wal');
     assert.equal(result.integrity, 'ok');
     assert.deepEqual(result.backupFreshness, state.getBackupFreshness(policy));

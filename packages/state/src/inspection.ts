@@ -7,7 +7,6 @@ import { verifyDatabaseIntegrity } from './integrity.js';
 import { inspectMigrations, migrations } from './migrations.js';
 import { record } from './records.js';
 import { RuntimeStateError, stateError } from './types.js';
-
 export interface RuntimeInspectionOptions extends BackupFreshnessPolicy {
   path: string;
 }
@@ -17,14 +16,13 @@ export interface RuntimeInspection {
   integrity: 'ok';
   backupFreshness: BackupFreshness;
 }
-/** Existing current state only: no file initialization, migration or entity/event writes. */
-export function inspectSqliteRuntimeState(
-  options: RuntimeInspectionOptions,
-): RuntimeInspection {
+/** Internal shared read transaction. The callback/connection is never exported through Core. */
+export function readRuntimeDatabase<T>(
+  path: unknown,
+  work: (db: DatabaseSync, version: number) => T,
+): T {
   let db: DatabaseSync | undefined;
   try {
-    const values = record(options, ['path', 'now', 'maxAgeMs']);
-    const path = values['path'];
     if (
       typeof path !== 'string' ||
       !isAbsolute(path) ||
@@ -42,13 +40,12 @@ export function inspectSqliteRuntimeState(
       enableDoubleQuotedStringLiterals: false,
     });
     db.exec('PRAGMA trusted_schema=OFF');
-    // Pin a read view so migration/integrity/backup observations describe one committed state.
     db.exec('BEGIN');
     const version = inspectMigrations(db);
     if (version !== migrations.length)
       throw new RuntimeStateError(
         'SCHEMA_MISMATCH',
-        'Use the current schema; doctor never initializes or upgrades runtime state.',
+        'Use the current schema; read-only checks never initialize or upgrade runtime state.',
       );
     verifyDatabaseIntegrity(db);
     if (db.prepare('PRAGMA journal_mode').get()?.['journal_mode'] !== 'wal')
@@ -56,19 +53,31 @@ export function inspectSqliteRuntimeState(
         'STATE_IO_ERROR',
         'Configure WAL mode through control-plane initialization.',
       );
-    const policy: BackupFreshnessPolicy = {};
-    if (Object.hasOwn(values, 'now')) policy.now = values['now'] as string;
-    if (Object.hasOwn(values, 'maxAgeMs'))
-      policy.maxAgeMs = values['maxAgeMs'] as number;
-    return {
-      schemaVersion: version,
-      journalMode: 'wal',
-      integrity: 'ok',
-      backupFreshness: backupFreshness(db, policy),
-    };
+    return work(db, version);
   } catch (error) {
     throw stateError(error);
   } finally {
     db?.close();
+  }
+}
+export function inspectSqliteRuntimeState(
+  options: RuntimeInspectionOptions,
+): RuntimeInspection {
+  try {
+    const values = record(options, ['path', 'now', 'maxAgeMs']);
+    return readRuntimeDatabase(values['path'], (db, version) => {
+      const policy: BackupFreshnessPolicy = {};
+      if (Object.hasOwn(values, 'now')) policy.now = values['now'] as string;
+      if (Object.hasOwn(values, 'maxAgeMs'))
+        policy.maxAgeMs = values['maxAgeMs'] as number;
+      return {
+        schemaVersion: version,
+        journalMode: 'wal',
+        integrity: 'ok',
+        backupFreshness: backupFreshness(db, policy),
+      };
+    });
+  } catch (error) {
+    throw stateError(error);
   }
 }
