@@ -51,7 +51,7 @@ Files: docs/runtime-state.md, schemas/runtime-state-v1.md, README.md, AGENTS.md,
 - [x] Exercise Core runtime state from a clean installation and unrelated cwd.
 - [x] Run npm run check, npm run typecheck, and git diff --check; record actual evidence.
 - [x] Obtain one independent review; fix concrete findings using regression tests.
-- [ ] Prepare PR, verify CI, merge, sync issue/Project status, and verify main.
+- [x] Prepare PR, verify CI, merge, sync issue/Project status, and verify main.
 
 ## Execution ledger
 
@@ -70,3 +70,5 @@ Files: docs/runtime-state.md, schemas/runtime-state-v1.md, README.md, AGENTS.md,
 - Final Ruling: fix both findings in the same pass because the public scope-expiry and safe async-rejection contracts already promise this behavior. No deferred review findings.
 
 - Final fixed: both transaction lifecycle regressions RED→GREEN; check/typecheck and full suite pass 125/125, diff check clean. Task 3 integration awaiting PR CI/merge.
+
+- Task 3 complete: PR #18 merged at 852e487 after push/PR CI both passed. Merged main check/typecheck pass with 125/125 tests. FR-003 is Done; M-01 remains open and FR-004 is next.
