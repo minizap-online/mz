@@ -94,3 +94,9 @@ Documents must be UTF-8 regular files of at most 1 MiB. Absolute paths, paths es
 | `NOT_REGULAR_FILE`, `FILE_TOO_LARGE`      | Choose a regular file no larger than 1 MiB.                       |
 
 Tests use temporary synthetic repositories and the generic starter. They never read private company configuration or credentials.
+
+## Strict source reads
+
+FR-010 adds optional `readYaml(path, {rejectLinks:true})` and `readMarkdown(path, {rejectLinks:true})`. Strict reads reject symbolic aliases in any selected path and opened files with multiple links, while preserving containment/UTF-8/size checks. Default behavior remains unchanged. The context compiler uses strict reads to prevent a selected logical path aliasing another role/project/source. `CompanyReadOptions` is configuration, not a capability grant or protection against a malicious trusted host rewriting content.
+
+`normalizeLineEndings:true` optionally normalizes CRLF/CR to LF before YAML/front-matter parsing. Context uses it with strict links to keep CR-only declarations and captured digests consistent. Default reads retain their original body/line-boundary behavior.

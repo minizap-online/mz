@@ -1,3 +1,3 @@
-# Manual draft; no loader or capability enforcement exists yet.
+# Manual draft; context validates identity/references, never activation or capabilities.
 project: example-project
 activation: pending-owner-approval

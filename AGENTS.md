@@ -2,9 +2,9 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains MZ, the organization toolbox, with the M-00 bootstrap, M-01 company loading/runtime/secret boundaries, and M-02 private Markdown intake/inbox triage. Read `MZ_IMPLEMENTATION_PLAN.md`, `docs/architecture.md`, and the active milestone before changes. Actual organization context belongs in the separate private company repository.
+This checkout contains MZ, the organization toolbox, with the M-00 bootstrap, M-01 company loading/runtime/secret boundaries, M-02 private intake/inbox triage, and M-03 deterministic context compilation. Read `MZ_IMPLEMENTATION_PLAN.md`, `docs/architecture.md`, and the active milestone before changes. Actual organization context belongs in the separate private company repository.
 
-The TypeScript layout is `packages/{core,cli,context,state,skill}` plus `packages/providers/github/`. Shared schemas belong in `schemas/`, reusable scaffolding in `templates/`, documentation in `docs/`, and generic examples in `examples/`. The CLI implements help/version, diagnostic `mz doctor`, private `mz ingest`, and `mz inbox` inspection/triage. Core provides the read-only company repository loader (FR-002); state provides the SQLite adapter through Core, while the GitHub provider is an audited offline skeleton and context remains a placeholder. Read `docs/company-repository.md`, `docs/runtime-state.md`, `docs/secrets.md`, `docs/backups.md`, `docs/providers.md`, `docs/doctor.md`, `docs/intake.md`, and `docs/inbox.md` before changing those boundaries. `docs/` contains ticket and milestone tracking. Keep private company configuration separate from reusable MZ implementation.
+The TypeScript layout is `packages/{core,cli,context,state,skill}` plus `packages/providers/github/`. Shared schemas belong in `schemas/`, reusable scaffolding in `templates/`, documentation in `docs/`, and generic examples in `examples/`. The CLI implements help/version, diagnostic `mz doctor`, private `mz ingest`, `mz inbox` inspection/triage, and `mz context`. Core provides the read-only company repository loader (FR-002); state provides the SQLite adapter through Core, while the GitHub provider is an audited offline skeleton and context compiles explicitly selected curated sources. Read `docs/company-repository.md`, `docs/runtime-state.md`, `docs/secrets.md`, `docs/backups.md`, `docs/providers.md`, `docs/doctor.md`, `docs/intake.md`, `docs/inbox.md`, and `docs/context.md` before changing those boundaries. `docs/` contains ticket and milestone tracking. Keep private company configuration separate from reusable MZ implementation.
 
 ## Build, Test, and Development Commands
 
@@ -12,7 +12,7 @@ Read `docs/workflow.md`, `docs/tickets/README.md`, and the active milestone befo
 
 Requires Node.js 24+ and npm 11+. Use `npm ci`, `npm run build`, `npm test`, `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run check`. Run `npm run format` to apply formatting. After building, use `npm run mz -- --help` or `npm exec -- mz --version`.
 
-Use `mz doctor` for environment checks; see `docs/doctor.md` for explicit state and secret configuration. Use `mz ingest idea.md` or stdin with explicit private storage/actor settings from `docs/intake.md`; `mz context` remains a target interface.
+Use `mz doctor` for environment checks; see `docs/doctor.md` for explicit state and secret configuration. Use `mz ingest idea.md` or stdin with explicit private storage/actor settings from `docs/intake.md`; use `mz context --role ROLE --task TASK` for bounded private context.
 
 ## Coding Style & Naming Conventions
 

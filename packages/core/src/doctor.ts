@@ -1,3 +1,4 @@
+import { containsObviousCredential } from './secrets/checks.js';
 import { isAbsolute } from 'node:path';
 import { inspectSqliteRuntimeState, type RuntimeInspection } from '@mz/state';
 import { loadCompanyRepository } from './company/repository.js';
@@ -120,8 +121,6 @@ function validate(input: unknown): DoctorOptions {
     throw new DoctorError();
   }
 }
-const obviousSecret =
-  /(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\bBearer\s+\S+|\b(?:password|token|secret)\s*[:=]\s*\S+)/i;
 
 /** Read-only diagnostic orchestration; injected host code is trusted, never a capability sandbox. */
 export async function runDoctor(
@@ -148,8 +147,8 @@ export async function runDoctor(
       'Keep organization context in the private company repository.',
     );
     const suspect =
-      obviousSecret.test(company.config.id) ||
-      obviousSecret.test(company.config.name);
+      containsObviousCredential(company.config.id) ||
+      containsObviousCredential(company.config.name);
     add(
       'config.secrets',
       suspect ? 'fail' : 'pass',

@@ -6,6 +6,7 @@ import {
   CompanyRepositoryError,
   type CompanyRepository,
   type CompanyRepositoryOptions,
+  type CompanyReadOptions,
 } from './types.js';
 
 const MAX_FILE_BYTES = 1024 * 1024;
@@ -19,7 +20,11 @@ function isContained(root: string, path: string): boolean {
   return part !== '..' && !part.startsWith(`..${sep}`) && !isAbsolute(part);
 }
 
-async function readContained(root: string, path: string): Promise<string> {
+async function readContained(
+  root: string,
+  path: string,
+  options?: CompanyReadOptions,
+): Promise<string> {
   if (!path || path.includes('\0')) {
     throw new CompanyRepositoryError(
       'INVALID_PATH',
@@ -36,7 +41,39 @@ async function readContained(root: string, path: string): Promise<string> {
     );
   }
   try {
+    let rejectLinks = false;
+    let normalizeLineEndings = false;
+    if (options !== undefined) {
+      if (
+        options === null ||
+        typeof options !== 'object' ||
+        Array.isArray(options)
+      )
+        throw new Error();
+      const prototype: unknown = Object.getPrototypeOf(options);
+      if (prototype !== Object.prototype && prototype !== null)
+        throw new Error();
+      for (const key of Reflect.ownKeys(options)) {
+        if (key !== 'rejectLinks' && key !== 'normalizeLineEndings')
+          throw new Error();
+        const property = Object.getOwnPropertyDescriptor(options, key);
+        if (
+          !property ||
+          !('value' in property) ||
+          typeof property.value !== 'boolean'
+        )
+          throw new Error();
+        if (key === 'rejectLinks') rejectLinks = property.value;
+        else normalizeLineEndings = property.value;
+      }
+    }
     const canonical = await realpath(target);
+    if (rejectLinks && canonical !== target)
+      throw new CompanyRepositoryError(
+        'INVALID_PATH',
+        'Use direct single-link source files for strict reads.',
+        path,
+      );
     if (!isContained(root, canonical)) {
       throw new CompanyRepositoryError(
         'PATH_OUTSIDE_REPOSITORY',
@@ -47,10 +84,18 @@ async function readContained(root: string, path: string): Promise<string> {
     // Nonblocking open also lets us reject named pipes without waiting for a writer.
     const file = await open(
       canonical,
-      constants.O_RDONLY | constants.O_NONBLOCK,
+      constants.O_RDONLY |
+        constants.O_NONBLOCK |
+        (rejectLinks ? constants.O_NOFOLLOW : 0),
     );
     try {
       const info = await file.stat();
+      if (rejectLinks && info.nlink !== 1)
+        throw new CompanyRepositoryError(
+          'INVALID_PATH',
+          'Use direct single-link source files for strict reads.',
+          path,
+        );
       if (!info.isFile()) {
         throw new CompanyRepositoryError(
           'NOT_REGULAR_FILE',
@@ -84,9 +129,11 @@ async function readContained(root: string, path: string): Promise<string> {
           path,
         );
       }
-      return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
-        buffer.subarray(0, size),
-      );
+      const source = new TextDecoder('utf-8', {
+        fatal: true,
+        ignoreBOM: true,
+      }).decode(buffer.subarray(0, size));
+      return normalizeLineEndings ? source.replace(/\r\n?/g, '\n') : source;
     } finally {
       await file.close();
     }
@@ -178,9 +225,9 @@ export async function loadCompanyRepository(
   return Object.freeze({
     root,
     config,
-    readYaml: async (path: string) =>
-      parseMetadata(await readContained(root, path), path),
-    readMarkdown: async (path: string) =>
-      parseMarkdown(await readContained(root, path), path),
+    readYaml: async (path: string, options?: CompanyReadOptions) =>
+      parseMetadata(await readContained(root, path, options), path),
+    readMarkdown: async (path: string, options?: CompanyReadOptions) =>
+      parseMarkdown(await readContained(root, path, options), path),
   });
 }
