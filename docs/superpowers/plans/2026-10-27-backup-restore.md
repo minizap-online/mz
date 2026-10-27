@@ -50,7 +50,7 @@ Files: docs/backups.md, schemas/runtime-state-v2.md, README/AGENTS/architecture/
 
 - [x] Document schema evolution, restore procedure, external tool contract, and live off-host/scheduling requirements separately.
 - [x] Run check/typecheck/diff check, independent review, and regression fixes.
-- [ ] Prepare PR, verify CI, merge, sync issue/Project, verify main, then continue FR-006.
+- [x] Prepare PR, verify CI, merge, sync issue/Project, verify main, then continue FR-006.
 
 ## Execution ledger
 
@@ -62,3 +62,5 @@ Files: docs/backups.md, schemas/runtime-state-v2.md, README/AGENTS/architecture/
 - Verification: full check/typecheck passed with 193 tests before final cleanup-failure test; targeted backup suite now 23 passed. Final full checks and independent review in progress. Freshness ages snapshot start conservatively and selects the newest successful start, preventing late-upload false freshness.
 
 - Final local verification: check (194/194), typecheck, Markdown links, diff check; migration 001 unchanged. Independent review: no functional blockers; expanded v1 fixture to substantiate run/event history preservation.
+
+- Integration: PR #20 merged as fb33555; both exact-head CI runs passed. Merged main check/typecheck passed (194 tests). FR-005 issue/Project synchronized Done. Next: FR-006.
