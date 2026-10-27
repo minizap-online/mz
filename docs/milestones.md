@@ -16,6 +16,8 @@ Tickets: [FR-001](tickets/FR-001.md), [FR-013](tickets/FR-013.md), [CR-001](tick
 
 ## M-01 Core domain and state boundary
 
+Implementation exit verified 2026-10-27: [requirement-by-requirement evidence and live deployment limits](milestone-m01-verification.md). FR-002 through FR-007 are complete; M-02 is next.
+
 Exit criteria: Company config and Core state operate without persisting credentials. Backup/restore contract and doctor health checks work.
 
 Tickets: [FR-002](tickets/FR-002.md), [FR-003](tickets/FR-003.md), [FR-004](tickets/FR-004.md), [FR-005](tickets/FR-005.md), [FR-006](tickets/FR-006.md), [FR-007](tickets/FR-007.md)
