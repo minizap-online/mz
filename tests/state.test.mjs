@@ -54,7 +54,7 @@ function raw(t, path) {
 test('Core creates a private WAL database with versioned event/inbox/run storage', (t) => {
   const { state, path } = setup(t);
   assert.deepEqual(state.getStatus(), {
-    schemaVersion: 1,
+    schemaVersion: 2,
     journalMode: 'wal',
     foreignKeys: true,
   });
@@ -69,10 +69,10 @@ test('Core creates a private WAL database with versioned event/inbox/run storage
   const ledger = db
     .prepare('SELECT version, name, checksum FROM schema_migrations')
     .all();
-  assert.equal(ledger.length, 1);
+  assert.equal(ledger.length, 2);
   assert.equal(ledger[0].version, 1);
   assert.match(ledger[0].checksum, /^[a-f0-9]{64}$/);
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 1);
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
   assert.equal(
     'database' in state || 'exec' in state || 'prepare' in state,
     false,
@@ -88,7 +88,7 @@ test('reopen preserves records and applies each migration only once', (t) => {
   assert.deepEqual(reopened.listEvents(), [added]);
   assert.equal(
     raw(t, path).prepare('SELECT count(*) AS n FROM schema_migrations').get().n,
-    1,
+    2,
   );
 });
 

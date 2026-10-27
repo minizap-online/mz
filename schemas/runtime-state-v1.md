@@ -23,4 +23,4 @@ No raw intake, description, token, payload, transcript, task priority, milestone
 - The migration, ledger update, and version change share a transaction. Initial or incremental failure rolls back DDL and existing records remain intact. Existing schema integrity is checked before applying an upgrade.
 - WAL, foreign keys, recursive triggers, FULL synchronization, and a 250 ms busy timeout are required by the adapter.
 
-Migration tests use real synthetic SQLite databases, including a simulated second migration to prove upgrade and failure behavior. No second production migration is shipped. Backup/restore is FR-005 and has not been implemented or tested by this schema work.
+Migration tests use real synthetic SQLite databases, including a simulated second migration to prove upgrade and failure behavior. FR-005 subsequently adds [schema v2](runtime-state-v2.md) and backup/restore verification; migration 001 remains unchanged.

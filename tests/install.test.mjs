@@ -62,9 +62,10 @@ test('clean install exposes mz and the Core runtime API from another directory',
         '--input-type=module',
         '-e',
         `
-      import { openRuntimeState, parseSecretRef, createHostFileSecretProvider } from ${JSON.stringify(pathToFileURL(join(fresh, 'packages/core/dist/index.js')).href)};
+      import { openRuntimeState, parseSecretRef, createHostFileSecretProvider, backupRuntimeState } from ${JSON.stringify(pathToFileURL(join(fresh, 'packages/core/dist/index.js')).href)};
       const state = openRuntimeState({ path: ${JSON.stringify(statePath)} });
       if (state.getStatus().journalMode !== 'wal') throw new Error('WAL unavailable');
+      if (state.getStatus().schemaVersion !== 2 || state.getBackupFreshness().status !== 'never' || !state.verifyIntegrity().ok || typeof backupRuntimeState !== 'function') throw new Error('backup API unavailable');
       state.close();
       if (parseSecretRef('host:example') !== 'host:example' || typeof createHostFileSecretProvider !== 'function') throw new Error('secret API unavailable');
     `,
