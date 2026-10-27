@@ -41,7 +41,7 @@ Files: packages/core/src/secrets/host-files.ts, docs/secrets.md, README.md, AGEN
 - [x] Add failing tests for host bindings, permissions, links, file bounds, and exact UTF-8 preservation.
 - [x] Implement POSIX ownership/permission checks, safe descriptor reads, and source-safe failures.
 - [x] Document host configuration, action lifetime, and primitive/redaction limits; no real host setup is performed.
-- [ ] Run npm run check, typecheck, and diff check; record evidence and obtain independent review.
+- [x] Run npm run check, typecheck, and diff check; record evidence and obtain independent review.
 - [ ] Fix concrete findings with regression tests; prepare PR, verify CI, merge, sync issue/Project, and verify main.
 
 ## Execution ledger
@@ -55,3 +55,5 @@ Files: packages/core/src/secrets/host-files.ts, docs/secrets.md, README.md, AGEN
 - Task 1/2 implementation complete: opaque/scoped secret handling, redaction, host provider, docs and clean export checks. No persistent schema changed.
 - RED→GREEN regressions: normalized symlink-root spelling, source-safe thrown error proxies, and unprotected writable ancestors. Safe error codes use private provenance rather than reading arbitrary thrown objects.
 - Check/typecheck/diff check pass; full suite 171/171. Independent review pending.
+
+- Independent review complete: no findings; 46/46 secret tests plus additional UTF-8/size/lifecycle/serialization probes passed. PR integration/CI remains before merge.
