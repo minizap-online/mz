@@ -8,8 +8,8 @@ import {
   migrations,
 } from '../packages/state/dist/migrations.js';
 
-const second = {
-  version: 3,
+const next = {
+  version: 4,
   name: 'test_upgrade',
   sql: 'CREATE TABLE extra (id TEXT PRIMARY KEY) STRICT;',
 };
@@ -24,7 +24,7 @@ test('initial migration failure rolls back every table and both SQLite version m
   assert.throws(() =>
     applyMigrations(db, [
       ...migrations,
-      { ...second, sql: second.sql + ' INVALID SQL;' },
+      { ...next, sql: next.sql + ' INVALID SQL;' },
     ]),
   );
   assert.deepEqual(
@@ -36,7 +36,7 @@ test('initial migration failure rolls back every table and both SQLite version m
   assert.equal(db.prepare('PRAGMA user_version').get().user_version, 0);
   assert.equal(db.prepare('PRAGMA application_id').get().application_id, 0);
   applyMigrations(db);
-  assert.equal(inspectMigrations(db), 2);
+  assert.equal(inspectMigrations(db), 3);
 });
 
 test('incremental migration succeeds once, preserves history, and advances its checksum ledger', (t) => {
@@ -47,16 +47,16 @@ test('incremental migration succeeds once, preserves history, and advances its c
     'source',
     'timestamp',
   );
-  applyMigrations(db, [...migrations, second]);
-  applyMigrations(db, [...migrations, second]);
-  assert.equal(inspectMigrations(db, [...migrations, second]), 3);
+  applyMigrations(db, [...migrations, next]);
+  applyMigrations(db, [...migrations, next]);
+  assert.equal(inspectMigrations(db, [...migrations, next]), 4);
   assert.equal(
     db.prepare('PRAGMA application_id').get().application_id,
     APPLICATION_ID,
   );
   assert.equal(
     db.prepare('SELECT count(*) AS n FROM schema_migrations').get().n,
-    3,
+    4,
   );
   assert.equal(db.prepare('SELECT id FROM inbox_items').get().id, 'fixture');
 });
@@ -72,10 +72,10 @@ test('failed upgrade preserves existing data, schema and migration version', (t)
   assert.throws(() =>
     applyMigrations(db, [
       ...migrations,
-      { ...second, sql: second.sql + ' INVALID SQL;' },
+      { ...next, sql: next.sql + ' INVALID SQL;' },
     ]),
   );
-  assert.equal(inspectMigrations(db), 2);
+  assert.equal(inspectMigrations(db), 3);
   assert.equal(
     db
       .prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name='extra'")
@@ -90,10 +90,10 @@ test('drifted existing schema is rejected before applying an upgrade', (t) => {
   applyMigrations(db);
   db.exec('DROP TRIGGER events_no_update');
   assert.throws(
-    () => applyMigrations(db, [...migrations, second]),
+    () => applyMigrations(db, [...migrations, next]),
     (e) => e.code === 'SCHEMA_MISMATCH',
   );
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3);
   assert.equal(
     db
       .prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name='extra'")

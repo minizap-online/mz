@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -67,7 +74,7 @@ test('clean install exposes mz and the Core runtime API from another directory',
       if (typeof createGitHubProviderSkeleton !== 'function') throw new Error('GitHub skeleton unavailable');
       const state = openRuntimeState({ path: ${JSON.stringify(statePath)} });
       if (state.getStatus().journalMode !== 'wal') throw new Error('WAL unavailable');
-      if (state.getStatus().schemaVersion !== 2 || state.getBackupFreshness().status !== 'never' || !state.verifyIntegrity().ok || typeof backupRuntimeState !== 'function') throw new Error('backup API unavailable');
+      if (state.getStatus().schemaVersion !== 3 || state.getBackupFreshness().status !== 'never' || !state.verifyIntegrity().ok || typeof backupRuntimeState !== 'function') throw new Error('backup API unavailable');
       state.close();
       if (parseSecretRef('host:example') !== 'host:example' || typeof createHostFileSecretProvider !== 'function') throw new Error('secret API unavailable');
     `,
@@ -93,6 +100,38 @@ test('clean install exposes mz and the Core runtime API from another directory',
       JSON.parse(doctor.stdout).checks.find((check) => check.id === 'runtime')
         .status,
       'pass',
+    );
+    const sources = join(fresh, 'sources');
+    mkdirSync(sources, { mode: 0o700 });
+    writeFileSync(
+      join(fresh, 'company.yaml'),
+      'schemaVersion: 1\nid: example\nname: Example\n',
+    );
+    const ingest = spawnSync(
+      join(fresh, 'node_modules/.bin/mz'),
+      ['ingest', '-', '--json'],
+      {
+        cwd: tmpdir(),
+        encoding: 'utf8',
+        input: '# Installation fixture\n',
+        env: {
+          PATH: process.env.PATH,
+          MZ_COMPANY_DIR: fresh,
+          MZ_RUNTIME_DB: statePath,
+          MZ_SOURCE_DIR: sources,
+          MZ_ACTOR_ID: '11111111-1111-4111-8111-111111111111',
+        },
+        timeout: 5000,
+      },
+    );
+    assert.ifError(ingest.error);
+    assert.equal(ingest.status, 0, ingest.stderr);
+    assert.equal(ingest.stderr, '');
+    const imported = JSON.parse(ingest.stdout);
+    assert.equal(imported.intake.sourceType, 'stdin');
+    assert.equal(
+      readFileSync(join(sources, imported.item.sourceId, 'content.md'), 'utf8'),
+      '# Installation fixture\n',
     );
   } finally {
     rmSync(fresh, { recursive: true, force: true });

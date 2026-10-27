@@ -47,7 +47,7 @@ The fixture acceptance is separate from deployment. Before relying on production
 - A genuinely off-host destination and independent inventory/retrieval checks under the backup UUID. Demonstrate recovery when the original host/storage is unavailable.
 - An automatic host/control-plane schedule, overlap prevention, bounded transport runtime, failure alerts, freshness policy and clock monitoring. No scheduler is implemented by FR-005.
 - Retention appropriate to the organization; the implementation plan starts with 14 daily and 8 weekly backups. Retain required decrypting keys independently and test rotation/recovery access.
-- Periodic independent restore drills, recorded recovery time/data loss, and recovery for the private company repository and external source stores as well as SQLite.
+- Periodic independent restore drills, recorded recovery time/data loss, and recovery for the private company repository and external source stores as well as SQLite. FR-008 raw intake files are an explicit private source store; SQLite-only backups contain references/metadata, not their Markdown or private manifests.
 
 ## Verification boundary
 

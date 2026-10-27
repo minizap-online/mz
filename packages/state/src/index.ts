@@ -36,3 +36,12 @@ export type {
   RuntimeInspectionOptions,
   RuntimeInspection,
 } from './inspection.js';
+
+export { MAX_INTAKE_BYTES } from './intake-types.js';
+export type {
+  InboxScope,
+  NewInboxIntake,
+  InboxIntake,
+} from './intake-types.js';
+
+export { inboxScope as parseInboxScope } from './records.js';

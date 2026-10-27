@@ -76,3 +76,15 @@ export type { RuntimeInspectionOptions, RuntimeInspection } from '@mz/state';
 export { runDoctor, DoctorError } from './doctor.js';
 export type { DoctorOptions, DoctorCheck, DoctorReport } from './doctor.js';
 export type { DoctorHost, DoctorCommandResult } from './doctor-host.js';
+
+export { MAX_INTAKE_BYTES } from '@mz/state';
+export type { InboxScope, NewInboxIntake, InboxIntake } from '@mz/state';
+
+export { parseInboxScope } from '@mz/state';
+export { ingestMarkdown, IntakeError } from './intake.js';
+export type {
+  MarkdownSource,
+  IngestMarkdownOptions,
+  IngestResult,
+  IntakeErrorCode,
+} from './intake.js';
