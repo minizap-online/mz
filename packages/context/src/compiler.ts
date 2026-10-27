@@ -46,7 +46,7 @@ function unsupportedControls(value: string, multiline: boolean): boolean {
   }
   return false;
 }
-function normalize(value: unknown, depth = 0): Json {
+export function normalize(value: unknown, depth = 0): Json {
   if (depth > 32) throw new Error();
   if (value === null || typeof value === 'boolean') return value;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -74,7 +74,7 @@ function normalize(value: unknown, depth = 0): Json {
   }
   return result;
 }
-function guard(value: Json, sensitive = false): void {
+export function guard(value: Json, sensitive = false): void {
   if (typeof value === 'string') {
     if (containsObviousCredential(value))
       throw new ContextError('CONTEXT_SECRET_DETECTED');

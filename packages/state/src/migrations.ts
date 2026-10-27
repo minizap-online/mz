@@ -42,6 +42,14 @@ export const migrations: readonly Migration[] = [
       'utf8',
     ),
   },
+  {
+    version: 5,
+    name: 'steward_interaction_references',
+    sql: readFileSync(
+      new URL('../migrations/005-steward.sql', import.meta.url),
+      'utf8',
+    ),
+  },
 ];
 const checksum = (sql: string): string =>
   createHash('sha256').update(sql).digest('hex');

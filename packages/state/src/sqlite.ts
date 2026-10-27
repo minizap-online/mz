@@ -1,4 +1,13 @@
 import {
+  getStewardInteraction,
+  getStewardDecisionForProposal,
+  listStewardInteractions,
+  listStewardDecisions,
+  startStewardInteraction,
+  finishStewardInteraction,
+  recordStewardDecision,
+} from './steward.js';
+import {
   getInboxDetails,
   listInbox,
   listInboxChanges,
@@ -341,6 +350,20 @@ export function createSqliteRuntimeState(
   }
   function scoped(scope: Scope): RuntimeTransaction {
     return Object.freeze({
+      getStewardDecisionForProposal: (id, index) =>
+        perform(scope, () => getStewardDecisionForProposal(db, id, index)),
+      getStewardInteraction: (id) =>
+        perform(scope, () => getStewardInteraction(db, id)),
+      listStewardInteractions: (input) =>
+        perform(scope, () => listStewardInteractions(db, input)),
+      listStewardDecisions: (input) =>
+        perform(scope, () => listStewardDecisions(db, input)),
+      startStewardInteraction: (input) =>
+        perform(scope, () => startStewardInteraction(db, input, startRun)),
+      finishStewardInteraction: (input) =>
+        perform(scope, () => finishStewardInteraction(db, input, finishRun)),
+      recordStewardDecision: (input) =>
+        perform(scope, () => recordStewardDecision(db, input, appendEvent)),
       getInboxDetails: (id) => perform(scope, () => getInboxDetails(db, id)),
       listInbox: (input) => perform(scope, () => listInbox(db, input)),
       listInboxChanges: (input) =>
@@ -430,6 +453,19 @@ export function createSqliteRuntimeState(
     listInboxChanges: (input) => query(() => listInboxChanges(db, input)),
     triageInboxItem: (input) =>
       transaction(() => triageInboxItem(db, input, appendEvent)),
+    getStewardDecisionForProposal: (id, index) =>
+      query(() => getStewardDecisionForProposal(db, id, index)),
+    getStewardInteraction: (id) => query(() => getStewardInteraction(db, id)),
+    listStewardInteractions: (input) =>
+      query(() => listStewardInteractions(db, input)),
+    listStewardDecisions: (input) =>
+      query(() => listStewardDecisions(db, input)),
+    startStewardInteraction: (input) =>
+      transaction(() => startStewardInteraction(db, input, startRun)),
+    finishStewardInteraction: (input) =>
+      transaction(() => finishStewardInteraction(db, input, finishRun)),
+    recordStewardDecision: (input) =>
+      transaction(() => recordStewardDecision(db, input, appendEvent)),
     getBackup: (id) => query(() => getBackup(id)),
     getBackupFreshness: (policy) => query(() => freshness(policy)),
     verifyIntegrity: () =>

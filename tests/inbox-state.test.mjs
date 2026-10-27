@@ -272,7 +272,7 @@ test('scoped triage is atomic, expires with its transaction and preserves histor
   db.close();
   const upgraded = core.openRuntimeState({ path });
   t.after(() => upgraded.close());
-  assert.equal(upgraded.getStatus().schemaVersion, 4);
+  assert.equal(upgraded.getStatus().schemaVersion, 5);
   assert.equal(upgraded.getInboxDetails(id).scope, 'company');
   let saved;
   upgraded.transaction((tx) => {

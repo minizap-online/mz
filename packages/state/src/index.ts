@@ -68,3 +68,19 @@ export type {
   InboxInspectOptions,
   InboxChangesOptions,
 } from './inbox-reader.js';
+
+export type {
+  StewardScope,
+  StewardInteraction,
+  StewardDecision,
+  StartStewardInteraction,
+  FinishStewardInteraction,
+  RecordStewardDecision,
+  StewardCursor,
+} from './steward-types.js';
+
+export { readSqliteStewardSnapshot } from './steward-reader.js';
+export type {
+  StewardSnapshotOptions,
+  StewardSnapshot,
+} from './steward-reader.js';

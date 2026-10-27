@@ -221,7 +221,7 @@ test('ingest accepts a recognized v2 store and preserves its history while upgra
   assert.equal(result.status, 0, result.stderr);
   const state = core.openRuntimeState({ path: f.path });
   try {
-    assert.equal(state.getStatus().schemaVersion, 4);
+    assert.equal(state.getStatus().schemaVersion, 5);
     assert.equal(state.getInboxItem(actorId).sourceId, sourceId);
     assert.equal(state.listEvents().length, 2);
     assert.equal(state.listEvents()[0].id, sourceId);

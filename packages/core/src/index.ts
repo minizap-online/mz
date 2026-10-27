@@ -114,3 +114,37 @@ export type {
 } from '@mz/state';
 
 export { containsObviousCredential } from './secrets/checks.js';
+
+export type {
+  StewardScope,
+  StewardInteraction,
+  StewardDecision,
+  StartStewardInteraction,
+  FinishStewardInteraction,
+  RecordStewardDecision,
+  StewardCursor,
+} from '@mz/state';
+
+export { readSqliteStewardSnapshot as readStewardSnapshot } from '@mz/state';
+export type { StewardSnapshotOptions, StewardSnapshot } from '@mz/state';
+export {
+  StewardError,
+  validateStewardResponse,
+  stewardText,
+} from './steward.js';
+export type {
+  StewardRequest,
+  StewardResponse,
+  StewardWorker,
+} from './steward.js';
+export { openStewardArtifacts } from './steward-artifacts.js';
+export type { StewardArtifacts } from './steward-artifacts.js';
+export {
+  createPrivateStewardDecisionWriter,
+  recordApprovedStewardDecision,
+} from './steward-decisions.js';
+export type {
+  StewardDecisionApprover,
+  StewardDecisionWriter,
+  StewardDecisionProposal,
+} from './steward-decisions.js';
