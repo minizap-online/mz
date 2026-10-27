@@ -47,10 +47,10 @@ Files: state adapter/validation and tests/state.test.mjs; tests/state-migrations
 
 Files: docs/runtime-state.md, schemas/runtime-state-v1.md, README.md, AGENTS.md, docs/architecture.md, docs/workflow.md, docs/tickets/FR-003.md, tests/install.test.mjs.
 
-- [ ] Document API, schema/migration rules, source-of-truth/privacy limits, and the embedded control-plane boundary.
-- [ ] Exercise Core runtime state from a clean installation and unrelated cwd.
-- [ ] Run npm run check, npm run typecheck, and git diff --check; record actual evidence.
-- [ ] Obtain one independent review; fix concrete findings using regression tests.
+- [x] Document API, schema/migration rules, source-of-truth/privacy limits, and the embedded control-plane boundary.
+- [x] Exercise Core runtime state from a clean installation and unrelated cwd.
+- [x] Run npm run check, npm run typecheck, and git diff --check; record actual evidence.
+- [x] Obtain one independent review; fix concrete findings using regression tests.
 - [ ] Prepare PR, verify CI, merge, sync issue/Project status, and verify main.
 
 ## Execution ledger
@@ -65,3 +65,8 @@ Files: docs/runtime-state.md, schemas/runtime-state-v1.md, README.md, AGENTS.md,
 - Task 1/2 complete: initial migrations and records, WAL and append-only constraints, scoped transactions and failure boundaries implemented.
 - Regressions RED→GREEN: drifted schema before upgrade, callback/initialization error traps, and false SQLite internal-name classification. Corrected LIKE underscore wildcard to a literal-prefix GLOB.
 - Task 3 docs/clean-install verification complete: check/typecheck/diff check pass, 123/123 tests. Clean install exercises Core/state package dependency and bundled SQL from unrelated cwd. Independent review pending.
+
+- Independent review: no Critical/Important issues; two Minor scope/result lifecycle findings reproduced by regressions.
+- Final Ruling: fix both findings in the same pass because the public scope-expiry and safe async-rejection contracts already promise this behavior. No deferred review findings.
+
+- Final fixed: both transaction lifecycle regressions RED→GREEN; check/typecheck and full suite pass 125/125, diff check clean. Task 3 integration awaiting PR CI/merge.

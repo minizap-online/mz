@@ -64,7 +64,7 @@ state.transaction((tx) => {
 
 The callback receives the record/query methods, without transaction, close, or status. Every call in the batch and its automatic audit events commits together. Any exception rolls back the batch; catching a failed operation inside the callback still invalidates the entire transaction. A failed operation leaves no partial entity/event pair.
 
-Callbacks must be synchronous. Async functions and returned thenables fail; transaction scopes expire at callback completion. Nested transactions, outer-state calls, and close during a transaction fail. Do not schedule background work from a transaction callback. Reads on another WAL connection see only committed data. A competing writer fails with `STATE_BUSY` after the bounded timeout; retry the whole operation after the writer finishes.
+Callbacks must be synchronous. Async functions and returned thenables fail; transaction scopes expire at callback completion. Nested transactions, outer-state calls, and close during a transaction fail. Do not schedule background work from a transaction callback. Rejected native Promise results are observed to avoid unhandled rejections, but the adapter cannot cancel already scheduled asynchronous work. Reads on another WAL connection see only committed data. A competing writer fails with `STATE_BUSY` after the bounded timeout; retry the whole operation after the writer finishes.
 
 ## Schema and errors
 

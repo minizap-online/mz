@@ -1,3 +1,4 @@
+import { types } from 'node:util';
 import {
   closeSync,
   constants,
@@ -299,6 +300,13 @@ export function createSqliteRuntimeState(
     current = scope;
     try {
       const result = work(scoped(scope));
+      // No operation may use this scope after the callback itself has returned.
+      scope.live = false;
+      if (types.isPromise(result)) {
+        // Observe rejected unsupported async work without invoking its .then getter.
+        void Promise.prototype.then.call(result, undefined, () => undefined);
+        return invalid();
+      }
       if (
         result !== null &&
         (typeof result === 'object' || typeof result === 'function') &&

@@ -4,7 +4,7 @@ MZ is a small MIT-licensed organization toolbox for humans and coding agents. It
 
 ## Current state
 
-The CLI currently implements help and version only. Core provides a read-only [company repository loader](docs/company-repository.md) and [SQLite runtime state](docs/runtime-state.md) with migrations and atomic audit history. Doctor, intake, context compilation, runtime storage, providers, and the agent skill are planned in later [milestones](docs/milestones.md). Context and provider packages reserve future implementation boundaries.
+The CLI currently implements help and version only. Core provides a read-only [company repository loader](docs/company-repository.md) and [SQLite runtime state](docs/runtime-state.md) with migrations and atomic audit history. Doctor, intake, context compilation, providers, and the agent skill are planned in later [milestones](docs/milestones.md). Context and provider packages reserve future implementation boundaries.
 
 ## Local development
 

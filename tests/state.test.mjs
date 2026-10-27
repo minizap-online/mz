@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import {
   mkdtempSync,
   readFileSync,
@@ -631,4 +632,47 @@ test('a foreign table resembling SQLite internal names is never treated as an em
   );
   assert.equal(db.prepare('PRAGMA application_id').get().application_id, 0);
   assert.equal(db.prepare('PRAGMA user_version').get().user_version, 0);
+});
+
+test('transaction scopes expire before inspecting returned object getters', (t) => {
+  const { state } = setup(t);
+  assert.throws(
+    () =>
+      state.transaction((tx) => {
+        tx.appendEvent(event);
+        return {
+          get then() {
+            tx.appendEvent(event);
+            return undefined;
+          },
+        };
+      }),
+    rejected('EXPIRED_TRANSACTION'),
+  );
+  assert.deepEqual(state.listEvents(), []);
+});
+
+test('a rejected async result is observed rather than terminating the control-plane process', (t) => {
+  const path = location(t);
+  const script = `
+    import { openRuntimeState } from ${JSON.stringify(new URL('../packages/core/dist/index.js', import.meta.url).href)};
+    const state = openRuntimeState({ path: ${JSON.stringify(path)} });
+    try {
+      state.transaction(tx => (async () => {
+        await Promise.resolve();
+        tx.appendEvent(${JSON.stringify(event)});
+      })());
+      throw new Error('async transaction unexpectedly accepted');
+    } catch (error) { if (error.code !== 'INVALID_INPUT') throw error; }
+    await new Promise(setImmediate);
+    if (state.listEvents().length !== 0) throw new Error('partial transaction committed');
+    state.close();
+  `;
+  const child = spawnSync(
+    process.execPath,
+    ['--input-type=module', '-e', script],
+    { encoding: 'utf8', timeout: 5000 },
+  );
+  assert.ifError(child.error);
+  assert.equal(child.status, 0, child.stderr);
 });
