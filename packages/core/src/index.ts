@@ -26,3 +26,15 @@ export type {
   RunOutcome,
   EventCursor,
 } from '@mz/state';
+export { parseSecretRef, SecretError } from './secrets/types.js';
+export { createHostFileSecretProvider } from './secrets/host-files.js';
+export { redactForLogging } from './secrets/handles.js';
+export type {
+  SecretRef,
+  SecretProvider,
+  SecretHandle,
+  SecretValue,
+  SecretErrorCode,
+  HostFileSecretProviderOptions,
+  RedactedValue,
+} from './secrets/types.js';

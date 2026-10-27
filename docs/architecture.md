@@ -22,7 +22,7 @@ Project activation, organizational authority changes, and spending retain human 
 
 ## Secrets and durability
 
-Persist symbolic secret references only. Credential values must never enter Git, SQLite, logs, fixtures, or examples. The control plane will resolve secrets for scoped operations. Runtime data must survive worker loss and have independently verified encrypted backups and restoration. FR-003 implements typed structural runtime history, migrations, WAL, and transactions. It does not implement secret resolution or backups; FR-004 and FR-005 remain prerequisites for those. See [runtime state](runtime-state.md).
+Persist symbolic secret references only. Credential values must never enter Git, SQLite, logs, fixtures, or examples. The control plane will resolve secrets for scoped operations. Runtime data must survive worker loss and have independently verified encrypted backups and restoration. FR-003 implements typed structural runtime history, migrations, WAL, and transactions. FR-004 adds host-file secret resolution through opaque scoped handles and diagnostic redaction. Backup/restore remains FR-005. See [runtime state](runtime-state.md) and [secret handling](secrets.md).
 
 ## Manual company scaffolding
 
