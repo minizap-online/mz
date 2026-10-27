@@ -2,9 +2,9 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains MZ, the organization toolbox, with the M-00 bootstrap and the first M-01 company loader. Read `MZ_IMPLEMENTATION_PLAN.md`, `docs/architecture.md`, and the active milestone before changes. Actual organization context belongs in the separate private company repository.
+This checkout contains MZ, the organization toolbox, with the M-00 bootstrap and M-01 company loading/runtime state. Read `MZ_IMPLEMENTATION_PLAN.md`, `docs/architecture.md`, and the active milestone before changes. Actual organization context belongs in the separate private company repository.
 
-The TypeScript layout is `packages/{core,cli,context,state,skill}` plus `packages/providers/github/`. Shared schemas belong in `schemas/`, reusable scaffolding in `templates/`, documentation in `docs/`, and generic examples in `examples/`. The CLI implements only help/version. Core provides the read-only company repository loader (FR-002); the other package boundaries are placeholders. Read `docs/company-repository.md` before changing that format. `docs/` contains ticket and milestone tracking. Keep private company configuration separate from reusable MZ implementation.
+The TypeScript layout is `packages/{core,cli,context,state,skill}` plus `packages/providers/github/`. Shared schemas belong in `schemas/`, reusable scaffolding in `templates/`, documentation in `docs/`, and generic examples in `examples/`. The CLI implements only help/version. Core provides the read-only company repository loader (FR-002); state provides the SQLite adapter through Core, while context/provider packages are placeholders. Read `docs/company-repository.md` and `docs/runtime-state.md` before changing those formats. `docs/` contains ticket and milestone tracking. Keep private company configuration separate from reusable MZ implementation.
 
 ## Build, Test, and Development Commands
 

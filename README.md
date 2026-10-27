@@ -4,7 +4,7 @@ MZ is a small MIT-licensed organization toolbox for humans and coding agents. It
 
 ## Current state
 
-The CLI currently implements help and version only. FR-002 adds a read-only [company repository loader](docs/company-repository.md) in Core. Doctor, intake, context compilation, runtime storage, providers, and the agent skill are planned in later [milestones](docs/milestones.md). State, context, and provider packages reserve future implementation boundaries.
+The CLI currently implements help and version only. Core provides a read-only [company repository loader](docs/company-repository.md) and [SQLite runtime state](docs/runtime-state.md) with migrations and atomic audit history. Doctor, intake, context compilation, providers, and the agent skill are planned in later [milestones](docs/milestones.md). Context and provider packages reserve future implementation boundaries.
 
 ## Local development
 
@@ -32,9 +32,9 @@ Unsupported commands or additional arguments exit with status 2. Diagnostics nev
 
 ## Structure
 
-- `packages/core`: company repository loading and the future domain/authority boundary.
+- `packages/core`: company loading and the typed runtime-state boundary.
 - `packages/cli`: command parsing and executable entry point.
-- `packages/context`, `packages/state`, `packages/providers/github`: reserved implementation boundaries.
+- `packages/state`: SQLite adapter and bundled migrations; `packages/context` and `packages/providers/github`: future implementation boundaries.
 - `packages/skill`: future thin worker skill.
 - `templates/company`: generic manual scaffolding for a separate private company repository.
 - `schemas`: versioned company configuration and migration instructions; `examples`: future runnable examples.
