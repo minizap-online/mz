@@ -202,8 +202,11 @@ export async function runStewardCli(
         ...(project === undefined ? {} : { project }),
         ...(runtime === undefined ? {} : { runtimePath: runtime }),
       });
+      const compact = JSON.stringify(status) + '\n';
+      const formatted = json ? compact : JSON.stringify(status, null, 2) + '\n';
+      if (Buffer.byteLength(compact) > 98304) invalid();
       return {
-        stdout: JSON.stringify(status, null, json ? undefined : 2) + '\n',
+        stdout: Buffer.byteLength(formatted) > 98304 ? compact : formatted,
         stderr: '',
         exitCode: 0,
       };

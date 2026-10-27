@@ -36,7 +36,7 @@
 ## Task 3: Integration and pilot handoff
 
 - [x] Documentation, current interface/recording contracts, operational limits and concrete real-pilot handoff.
-- [ ] Independent review and regression fixes; check/typecheck/diff/links/skill validation.
+- [x] Independent review and regression fixes; check/typecheck/diff/links/skill validation.
 - [ ] PR/CI/merge/main verification, issue/Project evidence; keep real-pilot acceptance unproven until actual human-authorized start.
 - [ ] Request only the necessary missing pilot/operational authorization once concrete reviewable work is ready. No speculative M-05+ functionality.
 
@@ -51,3 +51,13 @@
 - Full baseline after foundation: npm run check passed 385 tests. Subsequent task checks in progress; new regression tests verify duplicate approval/write prevention and durable-response/pending-state recovery. Real pilot remains unstarted.
 
 - Task 1/2 complete at 9e0da5f: npm run check passed 402/402 tests plus build/lint/format; npm run typecheck, skill quick validator and changed-doc local links passed. Task 3 independent review underway. Fresh reference baseline/green both preserved authority boundaries and corrected the obsolete steward availability gap.
+
+- Final review: /root/fr012_review examined the complete implementation at 9e0da5f and ran 28 steward tests. No Critical/Important issues reported; one output-bound finding reported Minor.
+- Final: Ruling: re-grade default status indentation overflow as Important — the emitted CLI output must honor its documented 96 KiB limit. Cost if wrong: a compact fallback reduces formatting for unusually nested evidence; no source is silently dropped.
+- Final: Ruling: live OpenAI compatibility, billing and retention remain host operational prerequisites — fixtures prove protocol handling without real calls. Cost if wrong: live use can fail or incur unauthorized cost if an operator bypasses provisioning/consent.
+- Final: Ruling: production authorization and host handle pairing remain outside this local implementation — trusted hosts must scope and pair company/runtime/artifact ports. Cost if wrong: a misconfigured trusted host can expose an incorrect scope.
+- Final: Ruling: malicious privileged host code and concurrent same-owner filesystem mutation remain outside the trust boundary — workers receive data only, not host capabilities. Cost if wrong: host compromise can defeat filesystem controls.
+- Final: Ruling: cross-store reconciliation and same-proposal serialization remain explicit operator duties — SQL references stay unique and failures preserve orphan evidence. Cost if wrong: concurrency/failure requires private manual reconciliation.
+- Final: Ruling: deployed artifact backups and actual pilot activation remain unverified prerequisites — development fixtures are not operational acceptance. Cost if wrong: live operation without provisioning could lose private continuity or activate unauthorized work.
+
+- Final: fixed rendered-status bound — regression failed at 222+ KiB then passed with compact fallback; full npm run check passed 403/403 tests, build/lint/format and npm run typecheck passed. No deferred Minor findings remain. The one fresh review is complete; no second review requested.

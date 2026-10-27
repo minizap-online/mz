@@ -13,3 +13,5 @@ FR-012 implements status and bounded advisory discussion. Its real-pilot accepta
 Validation before independent review: `npm run check` passed all 402 tests, build, lint and format checks; `npm run typecheck`, `git diff --check`, changed-document local link checks and the official local skill quick validator passed. Review/CI/merge verification is recorded in [FR-012](tickets/FR-012.md).
 
 The host must provision and correctly pair private company/runtime/artifact storage and scoped interfaces; actor/worker/approval UUIDs alone confer no authority. Account/model access, transmission consent, spending, deployment, encrypted artifact backup and live provider connectivity remain operational prerequisites. Cross-store failures retain private orphan/pending evidence for explicit trusted recovery, with no automatic retry, deletion or fabricated success. See [steward contracts and limits](steward.md).
+
+Independent whole-branch review completed. A rendered-status indentation overflow was fixed with an observed failing regression and bounded compact fallback; final full checks passed 403/403 tests plus build/lint/format/typecheck. No deferred review findings remain.

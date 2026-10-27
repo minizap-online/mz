@@ -147,7 +147,7 @@ export async function getStewardStatus(
       },
     };
     guard(normalize(result));
-    if (Buffer.byteLength(JSON.stringify(result)) > 98304)
+    if (Buffer.byteLength(JSON.stringify(result) + '\n') > 98304)
       throw new ContextError('CONTEXT_BUDGET_EXCEEDED');
     return result;
   } catch (error) {

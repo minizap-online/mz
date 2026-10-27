@@ -118,3 +118,22 @@ test('installed ask uses configured real adapter with synthetic transport and du
   state.close();
   assert.doesNotMatch(stdout, /synthetic-openai-key|mz-steward-cli-/);
 });
+test('default status formatting respects the same complete output budget as JSON', async (t) => {
+  const f = await contextFixture(t);
+  let nested = Array(4000).fill(0);
+  for (let i = 0; i < 20; i++) nested = { x: nested };
+  await writeFile(
+    join(f.root, 'projects/alpha/project.yaml'),
+    JSON.stringify({ project: 'alpha', nested }),
+  );
+  const args = ['status', '--company', f.root, '--project', 'alpha'];
+  for (const flags of [[], ['--json']]) {
+    const result = await runCli([...args, ...flags], 'test');
+    assert.equal(result.exitCode, 0);
+    assert.ok(
+      Buffer.byteLength(result.stdout) <= 98304,
+      'Complete rendered status must fit 96 KiB',
+    );
+    assert.equal(JSON.parse(result.stdout).scope, 'project:alpha');
+  }
+});
