@@ -52,3 +52,20 @@ export type {
   BackupSnapshot,
   BackupErrorCode,
 } from './backups.js';
+
+export { ProviderError } from './providers.js';
+export type {
+  ProviderReference,
+  RepositoryReference,
+  WorkItemReference,
+  ProviderRepository,
+  ProviderWorkItem,
+  CreateWorkItem,
+  ProviderActionContext,
+  ProviderOperation,
+  ProviderErrorCode,
+  ProviderAuditRecord,
+  ProviderAuditSink,
+  SourceControlProvider,
+  WorkProvider,
+} from './providers.js';

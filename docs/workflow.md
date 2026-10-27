@@ -37,7 +37,7 @@ GitHub Issues and Projects own actionable work and planning fields. Git owns cur
 
 ## Scope and session handoff
 
-M-00 is complete: the TypeScript workspace, help/version CLI, public/private repositories, issues, and private planning Project are verified. Current work is M-01. FR-002 company loading is complete; FR-003 structural SQLite history through Core is complete. FR-004 adds secret references, scoped host-file handles, and redaction. FR-005 adds the backup/restore contract and encrypted fixture verification; live backup deployment is separate. Provider interfaces and doctor remain separate tickets.
+M-00 is complete: the TypeScript workspace, help/version CLI, public/private repositories, issues, and private planning Project are verified. Current work is M-01. FR-002 company loading is complete; FR-003 structural SQLite history through Core is complete. FR-004 adds secret references, scoped host-file handles, and redaction. FR-005 adds the backup/restore contract and encrypted fixture verification; live backup deployment is separate. FR-006 adds provider interfaces and an audited offline GitHub skeleton; live integration remains future work. Doctor is next (FR-007).
 
 Follow milestones in order. After FR-012, start the real pilot before adding later automation. Normal work inside authorized scope does not require repeated approval; organizational authority changes, spending and project activation retain the design's human boundary.
 
