@@ -35,3 +35,7 @@ FR-007 adds [doctor](doctor.md), including read-only existing-state inspection t
 ## Context compilation
 
 [FR-010 context](context.md) reads an explicit role/project/task graph through Core strict company reads, with normalized digests, hard output/source limits and no provider/model/runtime activity. Context is informational; assigned identity/capabilities and human activation remain separate. No raw inbox content or unrelated project/process material is selected.
+
+## Thin worker skill
+
+[FR-011 skill](worker-skill.md) routes assigned workers through implemented MZ context/inbox/Core boundaries and marks missing recording/worker interfaces as prerequisites. It adds no permissions or domain logic; capability enforcement remains in the host/Core/provider boundary, outside the prompt. Its fixture evaluations verify fresh-worker context/application, not production deployment or durable decision/handover interfaces.
