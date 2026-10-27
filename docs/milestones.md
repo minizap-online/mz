@@ -6,6 +6,8 @@ Milestone numbers match section 24 of the [implementation plan](../MZ_IMPLEMENTA
 
 ## M-00 Bootstrap repositories
 
+Verified 2026-10-27: exit criteria met; see FR-001 and FR-013 for evidence. M-01 is the next implementation milestone.
+
 Exit criteria: Public reusable implementation and private company knowledge have separate homes; organization structure is understandable without reading MZ source.
 
 Tickets: [FR-001](tickets/FR-001.md), [FR-013](tickets/FR-013.md), [CR-001](tickets/CR-001.md), [CR-002](tickets/CR-002.md)

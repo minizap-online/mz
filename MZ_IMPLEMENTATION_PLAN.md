@@ -165,6 +165,8 @@ Git should **not** contain:
 
 ## 5.2 Runtime state = small operational database
 
+**CR-002 clarification:** GitHub Issues and Projects are authoritative for actionable work, priority, milestone, and board status. SQLite stores runtime history and references through Core, not a competing editable task tracker. Raw intake stays private until deliberate sanitized promotion to a linked issue. Events remain append-only; human project activation remains required. See [architecture](docs/architecture.md).
+
 Use SQLite for the first implementation.
 
 The database stores changing operational state:
@@ -529,7 +531,7 @@ Optional:
 
 ```bash
 mz ingest idea.md --scope company
-mz ingest idea.md --scope project:otto
+mz ingest idea.md --scope project:example-game
 ```
 
 This is more important than an interactive `mz new` wizard.
@@ -1362,7 +1364,7 @@ MZ v0 is successful when the following experience works:
 4. The Steward can discuss and structure it.
 5. The idea becomes an authorized MiniZap project.
 6. A fresh Codex worker gets the correct project + process context.
-7. Project work can continue without The owner reconstructing old context.
+7. Project work can continue without the owner reconstructing old context.
 8. Security, privacy and operational responsibilities are visible.
 9. MZ records enough history to explain what happened.
 10. The real game progresses faster than the MZ platform itself.

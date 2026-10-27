@@ -19,7 +19,7 @@ Ready means scope is clear and prerequisites are satisfied; it does not authoriz
 
 Priorities: P0 urgent security/data-loss or critical outage; P1 required milestone work; P2 useful improvement; P3 deferred refinement.
 
-Each ticket file owns its status, priority, milestone, acceptance and evidence. The register links tickets and milestones without duplicating status. Milestones describe exit criteria rather than copies of ticket acceptance.
+GitHub owns operational status, priority, and milestone; each linked ticket file mirrors those fields and records acceptance and evidence. The register links tickets and milestones without duplicating status. Milestones describe exit criteria rather than copies of ticket acceptance.
 
 ## GitHub and privacy
 
@@ -37,7 +37,7 @@ GitHub Issues and Projects own actionable work and planning fields. Git owns cur
 
 ## Scope and session handoff
 
-Current work is M-00: the TypeScript workspace and help/version CLI bootstrap. FR-013 tracks GitHub setup independently of local bootstrap. M-01 is next only after M-00 exit criteria are met.
+M-00 is complete: the TypeScript workspace, help/version CLI, public/private repositories, issues, and private planning Project are verified. M-01 is next, starting with FR-002; no M-01 functionality is included in the bootstrap.
 
 Follow milestones in order. After FR-012, start the real pilot before adding later automation. Normal work inside authorized scope does not require repeated approval; organizational authority changes, spending and project activation retain the design's human boundary.
 

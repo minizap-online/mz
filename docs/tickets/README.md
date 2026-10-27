@@ -1,6 +1,6 @@
 # Ticket register
 
-See [workflow](../workflow.md), [milestones](../milestones.md) and [template](../TICKET_TEMPLATE.md). Status lives only in each ticket file. GitHub Issues and the private organization Project are the operational work queue. External issue links are recorded in ticket metadata; files mirror acceptance and verification evidence.
+See [workflow](../workflow.md), [milestones](../milestones.md) and [template](../TICKET_TEMPLATE.md). The register does not duplicate status; GitHub is operational authority and linked ticket files mirror it. GitHub Issues and the private organization Project are the operational work queue. External issue links are recorded in ticket metadata; files mirror acceptance and verification evidence.
 
 | Ticket              | Outcome                                    | Milestone                     | Original reference |
 | ------------------- | ------------------------------------------ | ----------------------------- | ------------------ |
