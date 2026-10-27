@@ -1,0 +1,37 @@
+{
+  "name": "mz-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24",
+    "npm": ">=11"
+  },
+  "workspaces": [
+    "packages/core",
+    "packages/cli",
+    "packages/context",
+    "packages/state",
+    "packages/providers/github"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run build && npm run lint && npm run format:check && npm test",
+    "mz": "node packages/cli/dist/main.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
+  }
+}

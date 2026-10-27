@@ -1,0 +1,24 @@
+name: CR request
+description: Register a change with acceptance and evidence.
+title: 'CR-NNN: '
+labels: ['type:CR']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and desired behavior
+      description: For bugs include reproduction and expected versus actual behavior. Keep private data out.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and references
+      description: Include stable ticket ID, original MZ reference, milestone, dependencies, and acceptance.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification and limitations
+      description: Record actual commands, results, and remaining prerequisites.

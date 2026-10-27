@@ -1,0 +1,9 @@
+node_modules/
+**/dist/
+**/*.tsbuildinfo
+.env
+.env.*
+.private/
+.superpowers/
+MZ_IMPLEMENTATION_PLAN.md
+MINIZAP_ORGANIZATION_V0.md

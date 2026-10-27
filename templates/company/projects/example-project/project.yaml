@@ -1,0 +1,3 @@
+# Manual draft; no loader or capability enforcement exists yet.
+project: example-project
+activation: pending-owner-approval

@@ -1,0 +1,20 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/cli"
+    },
+    {
+      "path": "./packages/context"
+    },
+    {
+      "path": "./packages/state"
+    },
+    {
+      "path": "./packages/providers/github"
+    }
+  ]
+}

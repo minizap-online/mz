@@ -1,0 +1,24 @@
+name: FR request
+description: Register a feature with acceptance and evidence.
+title: 'FR-NNN: '
+labels: ['type:FR']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and desired behavior
+      description: For bugs include reproduction and expected versus actual behavior. Keep private data out.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and references
+      description: Include stable ticket ID, original MZ reference, milestone, dependencies, and acceptance.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification and limitations
+      description: Record actual commands, results, and remaining prerequisites.
