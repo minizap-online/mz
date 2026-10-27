@@ -38,3 +38,17 @@ export type {
   HostFileSecretProviderOptions,
   RedactedValue,
 } from './secrets/types.js';
+
+export type {
+  BackupRecord,
+  BackupFreshness,
+  BackupFreshnessPolicy,
+} from '@mz/state';
+export { backupRuntimeState, BackupError } from './backups.js';
+export type {
+  RuntimeBackupOptions,
+  EncryptedBackupHook,
+  EncryptedBackupReceipt,
+  BackupSnapshot,
+  BackupErrorCode,
+} from './backups.js';

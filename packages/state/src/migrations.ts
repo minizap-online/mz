@@ -18,6 +18,14 @@ export const migrations: readonly Migration[] = [
       'utf8',
     ),
   },
+  {
+    version: 2,
+    name: 'backup_history',
+    sql: readFileSync(
+      new URL('../migrations/002-backups.sql', import.meta.url),
+      'utf8',
+    ),
+  },
 ];
 const checksum = (sql: string): string =>
   createHash('sha256').update(sql).digest('hex');

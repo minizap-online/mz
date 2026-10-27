@@ -1,6 +1,7 @@
+import { privateHostDirectory } from '../private-host-directory.js';
 import { constants } from 'node:fs';
-import { lstat, open, realpath } from 'node:fs/promises';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { lstat, open } from 'node:fs/promises';
+import { isAbsolute, join, resolve } from 'node:path';
 import { createSecretHandle } from './handles.js';
 import {
   parseSecretRef,
@@ -38,33 +39,6 @@ function owner(uid: number): boolean {
     throw new SecretError('UNSUPPORTED_SECRET_HOST');
   return uid === 0 || uid === process.geteuid();
 }
-async function secureDirectory(path: string): Promise<void> {
-  try {
-    const info = await lstat(path);
-    if (!info.isDirectory() || !owner(info.uid) || (info.mode & 0o077) !== 0)
-      throw new SecretError('UNSAFE_SECRET_DIRECTORY');
-  } catch (error) {
-    throw secretFailure(error, 'UNSAFE_SECRET_DIRECTORY');
-  }
-}
-async function secureAncestors(directory: string): Promise<void> {
-  let path = dirname(directory);
-  try {
-    while (true) {
-      const info = await lstat(path);
-      const writable = (info.mode & 0o022) !== 0;
-      const sticky = (info.mode & 0o1000) !== 0;
-      if (!info.isDirectory() || !owner(info.uid) || (writable && !sticky))
-        throw new SecretError('UNSAFE_SECRET_DIRECTORY');
-      const parent = dirname(path);
-      if (parent === path) break;
-      path = parent;
-    }
-  } catch (error) {
-    throw secretFailure(error, 'UNSAFE_SECRET_DIRECTORY');
-  }
-}
-
 async function readSecret(
   directory: string,
   filename: string,
@@ -159,21 +133,21 @@ export async function createHostFileSecretProvider(
       throw new SecretError('UNSUPPORTED_SECRET_HOST');
     throw new SecretError('INVALID_SECRET_CONFIGURATION');
   }
-  await secureDirectory(directory);
   try {
-    directory = await realpath(directory);
+    directory = await privateHostDirectory(directory);
   } catch {
     throw new SecretError('UNSAFE_SECRET_DIRECTORY');
   }
-  await secureDirectory(directory);
-  await secureAncestors(directory);
   return Object.freeze({
     async resolve(reference): Promise<SecretHandle> {
       const ref = parseSecretRef(reference);
       const filename = bindings.get(ref);
       if (filename === undefined) throw new SecretError('UNKNOWN_SECRET_REF');
-      await secureDirectory(directory);
-      await secureAncestors(directory);
+      try {
+        await privateHostDirectory(directory);
+      } catch {
+        throw new SecretError('UNSAFE_SECRET_DIRECTORY');
+      }
       return createSecretHandle(ref, await readSecret(directory, filename));
     },
   } satisfies SecretProvider);

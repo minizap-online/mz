@@ -9,7 +9,7 @@ import {
 } from '../packages/state/dist/migrations.js';
 
 const second = {
-  version: 2,
+  version: 3,
   name: 'test_upgrade',
   sql: 'CREATE TABLE extra (id TEXT PRIMARY KEY) STRICT;',
 };
@@ -23,7 +23,7 @@ test('initial migration failure rolls back every table and both SQLite version m
   const db = database(t);
   assert.throws(() =>
     applyMigrations(db, [
-      migrations[0],
+      ...migrations,
       { ...second, sql: second.sql + ' INVALID SQL;' },
     ]),
   );
@@ -36,7 +36,7 @@ test('initial migration failure rolls back every table and both SQLite version m
   assert.equal(db.prepare('PRAGMA user_version').get().user_version, 0);
   assert.equal(db.prepare('PRAGMA application_id').get().application_id, 0);
   applyMigrations(db);
-  assert.equal(inspectMigrations(db), 1);
+  assert.equal(inspectMigrations(db), 2);
 });
 
 test('incremental migration succeeds once, preserves history, and advances its checksum ledger', (t) => {
@@ -49,14 +49,14 @@ test('incremental migration succeeds once, preserves history, and advances its c
   );
   applyMigrations(db, [...migrations, second]);
   applyMigrations(db, [...migrations, second]);
-  assert.equal(inspectMigrations(db, [...migrations, second]), 2);
+  assert.equal(inspectMigrations(db, [...migrations, second]), 3);
   assert.equal(
     db.prepare('PRAGMA application_id').get().application_id,
     APPLICATION_ID,
   );
   assert.equal(
     db.prepare('SELECT count(*) AS n FROM schema_migrations').get().n,
-    2,
+    3,
   );
   assert.equal(db.prepare('SELECT id FROM inbox_items').get().id, 'fixture');
 });
@@ -75,7 +75,7 @@ test('failed upgrade preserves existing data, schema and migration version', (t)
       { ...second, sql: second.sql + ' INVALID SQL;' },
     ]),
   );
-  assert.equal(inspectMigrations(db), 1);
+  assert.equal(inspectMigrations(db), 2);
   assert.equal(
     db
       .prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name='extra'")
@@ -93,7 +93,7 @@ test('drifted existing schema is rejected before applying an upgrade', (t) => {
     () => applyMigrations(db, [...migrations, second]),
     (e) => e.code === 'SCHEMA_MISMATCH',
   );
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 1);
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
   assert.equal(
     db
       .prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name='extra'")

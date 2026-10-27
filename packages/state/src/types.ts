@@ -1,3 +1,8 @@
+import type {
+  BackupRecord,
+  BackupFreshness,
+  BackupFreshnessPolicy,
+} from './backup-types.js';
 export const RUNTIME_EVENT_TYPES = [
   'inbox.created',
   'inbox.triaged',
@@ -40,6 +45,7 @@ export interface RuntimeEvent {
   occurredAt: string;
   runId: string | null;
   inboxItemId: string | null;
+  backupId: string | null;
 }
 export interface InboxItem {
   id: string;
@@ -60,6 +66,7 @@ export interface NewRuntimeEvent {
   occurredAt?: string;
   runId?: string;
   inboxItemId?: string;
+  backupId?: string;
 }
 export interface NewInboxItem {
   id?: string;
@@ -93,6 +100,9 @@ export interface RuntimeTransaction {
   listEvents(cursor?: EventCursor): RuntimeEvent[];
 }
 export interface RuntimeState extends RuntimeTransaction {
+  getBackup(id: string): BackupRecord | null;
+  getBackupFreshness(policy?: BackupFreshnessPolicy): BackupFreshness;
+  verifyIntegrity(): { ok: true };
   transaction<T>(work: (transaction: RuntimeTransaction) => T): T;
   getStatus(): { schemaVersion: number; journalMode: 'wal'; foreignKeys: true };
   close(): void;
@@ -107,6 +117,7 @@ export type RuntimeStateErrorCode =
   | 'STATE_BUSY'
   | 'STATE_CONFLICT'
   | 'STATE_IO_ERROR'
+  | 'STATE_CORRUPT'
   | 'UNSUPPORTED_DATABASE'
   | 'MIGRATION_FAILED'
   | 'SCHEMA_MISMATCH'
@@ -133,6 +144,7 @@ const SAFE_MESSAGES: Record<RuntimeStateErrorCode, string> = {
   STATE_BUSY: 'Runtime state is busy; retry after the current writer finishes.',
   STATE_CONFLICT:
     'The operation conflicts with an existing record or reference.',
+  STATE_CORRUPT: 'Runtime state failed its integrity or reference checks.',
   STATE_IO_ERROR:
     'Runtime storage could not be accessed; check the path and permissions.',
   UNSUPPORTED_DATABASE:
@@ -156,6 +168,7 @@ const SAFE_FIELDS = [
   'occurredAt',
   'runId',
   'inboxItemId',
+  'backupId',
   'sourceId',
   'workerId',
   'startedAt',

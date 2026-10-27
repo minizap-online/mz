@@ -26,7 +26,7 @@ state.close();
 
 The path must be absolute and its parent accessible. In-memory paths, database-file symlinks, and nonregular files are rejected; a new file uses mode 0600. Existing file permissions are preserved, so the control-plane operator remains responsible for them and the parent directory. No path is inferred from company config. `close()` is idempotent; other methods reject use after close.
 
-The adapter verifies WAL rather than silently falling back to another journal mode. Foreign keys, recursive triggers, FULL synchronous durability, and a bounded 250 ms writer timeout apply. `getStatus()` reports the schema version, WAL, and foreign-key state. It is not a backup health check. Use local SQLite-compatible storage; backup and restore requirements remain FR-005.
+The adapter verifies WAL rather than silently falling back to another journal mode. Foreign keys, recursive triggers, FULL synchronous durability, and a bounded 250 ms writer timeout apply. `getStatus()` reports the schema version, WAL, and foreign-key state. It is not a backup health check. Use local SQLite-compatible storage; see [backup health and restore](backups.md) for the FR-005 contract.
 
 ## Structural records only
 
@@ -36,7 +36,7 @@ IDs are identifiers, never credential values. The API is intentionally unable to
 
 | Operation                | Input and result                                                                                           |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `appendEvent`            | `{id?, type, actorId, occurredAt?, runId?, inboxItemId?}` → event with increasing sequence                 |
+| `appendEvent`            | `{id?, type, actorId, occurredAt?, runId?, inboxItemId?, backupId?}` → event with increasing sequence      |
 | `createInboxItem`        | `{id?, sourceId, actorId, receivedAt?}` → immutable source-reference record and atomic inbox.created event |
 | `startRun`               | `{id?, workerId, actorId, startedAt?}` → run and atomic run.started event                                  |
 | `finishRun`              | `{id, actorId, outcome, finishedAt?}` → terminal run and atomic run.finished event                         |
@@ -68,7 +68,7 @@ Callbacks must be synchronous. Async functions and returned thenables fail; tran
 
 ## Schema and errors
 
-See [schema v1 and migration rules](../schemas/runtime-state-v1.md). Reopening is idempotent. Foreign databases, unsupported future versions, modified checksums, and altered schema objects fail rather than being treated as an empty database. There is no automatic migration repair or downgrade.
+Current schema is [v2](../schemas/runtime-state-v2.md), extending [v1 and its migration rules](../schemas/runtime-state-v1.md). Reopening is idempotent. Foreign databases, unsupported future versions, modified checksums, and altered schema objects fail rather than being treated as an empty database. There is no automatic migration repair or downgrade.
 
 `RuntimeStateError` provides a stable code and optional known field name. Boundary errors never retain raw SQL, driver messages, callback messages/causes, or offending values. Catch and report the safe error rather than logging the rejected input.
 
@@ -85,4 +85,4 @@ See [schema v1 and migration rules](../schemas/runtime-state-v1.md). Reopening i
 | `TRANSACTION_FAILED`                        | The batch rolled back, including after a caught operation failure.                    |
 | `RUN_NOT_FOUND`, `RUN_FINISHED`             | Start the run first or avoid finishing a terminal run again.                          |
 
-Tests create temporary synthetic databases. They verify migrations/rollback, schema integrity, append-only triggers, audit atomicity, cursor order, state lifecycle, contention, rejected-content absence, and clean installation. No real organization state, secret provider, remote backup, or restore was exercised.
+Tests create temporary synthetic databases. They verify migrations/rollback, schema integrity, append-only triggers, audit atomicity, cursor order, state lifecycle, contention, rejected-content absence, and clean installation. FR-005 adds `getBackup`, `getBackupFreshness`, and `verifyIntegrity`; see [backups](backups.md) for their contract and fixture restore evidence. `STATE_CORRUPT` means integrity verification failed. No real organization state, remote backup, or production restore was exercised.

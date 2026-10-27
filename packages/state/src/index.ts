@@ -17,3 +17,16 @@ export type {
   RunOutcome,
   EventCursor,
 } from './types.js';
+
+export type {
+  BackupRecord,
+  BackupFreshness,
+  BackupFreshnessPolicy,
+} from './backup-types.js';
+
+export {
+  requireKnownRuntimeState,
+  beginRuntimeBackup,
+  finishRuntimeBackup,
+  snapshotRuntimeState,
+} from './backup-integration.js';
