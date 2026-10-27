@@ -40,7 +40,7 @@ Files: docs/providers.md, README/AGENTS/architecture/workflow, FR-006 ticket and
 
 - [x] Document boundaries, scoped identities, audit sink durability, no remote implementation and future authorization requirements.
 - [x] Run independent review, fix findings, verify checks/diff/links.
-- [ ] Create PR, verify exact-head CI, merge, verify main and sync issue/Project Done. Continue FR-007 doctor.
+- [x] Create PR, verify exact-head CI, merge, verify main and sync issue/Project Done. Continue FR-007 doctor.
 
 ## Execution ledger
 
@@ -49,3 +49,5 @@ Files: docs/providers.md, README/AGENTS/architecture/workflow, FR-006 ticket and
 - Verification: runtime red (16 failures) to green (16); full check 211/211, typecheck, diff and local links passed. Negative compile checks and fresh install verified. Independent review in progress.
 
 - Independent review: no actionable findings; reviewer passed provider/declaration (17) and clean-install (1) checks.
+
+- Integration: PR #21 merged as 2922ced after both exact-head CI runs passed. Merged main check/typecheck passed (211 tests). FR-006 issue/Project synchronized Done. Next actionable ticket: FR-007 doctor.
