@@ -50,7 +50,7 @@ Files: schemas/runtime-state-v3.md, docs/intake.md/storage/architecture/runtime-
 
 - [x] Document v3 upgrade, private source retention/recovery, CLI/API settings and limitations.
 - [x] Independent review; fix findings and verify full checks/diff/links.
-- [ ] PR, exact-head CI, merge, main verification, issue/Project Done. Continue FR-009 local inbox triage.
+- [x] PR, exact-head CI, merge, main verification, issue/Project Done. Continue FR-009 local inbox triage.
 
 ## Ledger
 
@@ -65,3 +65,5 @@ Files: schemas/runtime-state-v3.md, docs/intake.md/storage/architecture/runtime-
 - Independent review found an Important existing-runtime gap: a pre-created empty file was initialized by ingest. Red CLI regressions reproduced it; Core existingOnly now refuses missing/uninitialized/foreign files before WAL/migrations and still upgrades recognized v2 history. Reviewer independently reran all 51 intake tests and confirmed resolved, with no new findings.
 
 - Final local check passed 301/301 tests, build/lint/format, typecheck/diff/local links. Existing migrations 001/002 unchanged. Ready for PR/CI.
+
+- Integration: PR #23 merged as c9b410e after exact-head push/PR CI passed. Merged main check/typecheck passed (301 tests). FR-008 issue/Project synchronized Done; FR-009 local inbox triage is next.
