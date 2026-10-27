@@ -2,7 +2,7 @@
 
 ## Bootstrap boundary
 
-M-00 contains an npm workspace with ESM TypeScript packages and a CLI supporting only help/version. Core now provides the FR-002 read-only company loader; FR-003 adds SQLite through Core; context and provider packages still export empty modules. The CLI reads its own package metadata relative to the executable, works from an unrelated directory, and requires no company or runtime initialization.
+M-00 contains an npm workspace with ESM TypeScript packages and a CLI supporting only help/version. Core now provides the FR-002 read-only company loader; FR-003 adds SQLite through Core; context remains a placeholder; FR-006 adds neutral provider contracts in Core and an offline GitHub skeleton with an injected audit contract. See [providers](providers.md). The CLI reads its own package metadata relative to the executable, works from an unrelated directory, and requires no company or runtime initialization.
 
 Core will own domain types, capabilities, and access to runtime state. CLI, context compilation, state adapters, and providers remain separate packages. Provider and LLM details must not enter the domain. The worker skill will call MZ rather than duplicate its logic.
 

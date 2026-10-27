@@ -9,5 +9,8 @@
   "exports": "./dist/index.js",
   "engines": {
     "node": ">=24"
+  },
+  "dependencies": {
+    "@mz/core": "0.1.0"
   }
 }
