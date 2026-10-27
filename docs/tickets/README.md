@@ -19,5 +19,6 @@ See [workflow](../workflow.md), [milestones](../milestones.md) and [template](..
 | [FR-013](FR-013.md) | GitHub organization bootstrap              | [M-00](../milestones.md#m-00) | None               |
 | [CR-001](CR-001.md) | Ticket workflow and organization target    | [M-00](../milestones.md#m-00) | None               |
 | [CR-002](CR-002.md) | GitHub work authority and runtime boundary | [M-00](../milestones.md#m-00) | None               |
+| [CR-003](CR-003.md) | MIT attribution to expeter                 | [M-00](../milestones.md#m-00) | None               |
 
 No BUG tickets have been reported.
