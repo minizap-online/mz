@@ -9,7 +9,7 @@ import {
 } from '../packages/state/dist/migrations.js';
 
 const next = {
-  version: 5,
+  version: 6,
   name: 'test_upgrade',
   sql: 'CREATE TABLE extra (id TEXT PRIMARY KEY) STRICT;',
 };
@@ -36,7 +36,7 @@ test('initial migration failure rolls back every table and both SQLite version m
   assert.equal(db.prepare('PRAGMA user_version').get().user_version, 0);
   assert.equal(db.prepare('PRAGMA application_id').get().application_id, 0);
   applyMigrations(db);
-  assert.equal(inspectMigrations(db), 4);
+  assert.equal(inspectMigrations(db), 5);
 });
 
 test('incremental migration succeeds once, preserves history, and advances its checksum ledger', (t) => {
@@ -49,14 +49,14 @@ test('incremental migration succeeds once, preserves history, and advances its c
   );
   applyMigrations(db, [...migrations, next]);
   applyMigrations(db, [...migrations, next]);
-  assert.equal(inspectMigrations(db, [...migrations, next]), 5);
+  assert.equal(inspectMigrations(db, [...migrations, next]), 6);
   assert.equal(
     db.prepare('PRAGMA application_id').get().application_id,
     APPLICATION_ID,
   );
   assert.equal(
     db.prepare('SELECT count(*) AS n FROM schema_migrations').get().n,
-    5,
+    6,
   );
   assert.equal(db.prepare('SELECT id FROM inbox_items').get().id, 'fixture');
 });
@@ -75,7 +75,7 @@ test('failed upgrade preserves existing data, schema and migration version', (t)
       { ...next, sql: next.sql + ' INVALID SQL;' },
     ]),
   );
-  assert.equal(inspectMigrations(db), 4);
+  assert.equal(inspectMigrations(db), 5);
   assert.equal(
     db
       .prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name='extra'")
@@ -93,7 +93,7 @@ test('drifted existing schema is rejected before applying an upgrade', (t) => {
     () => applyMigrations(db, [...migrations, next]),
     (e) => e.code === 'SCHEMA_MISMATCH',
   );
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 4);
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 5);
   assert.equal(
     db
       .prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name='extra'")

@@ -1,0 +1,9 @@
+# FR-012 skill reference retrieval
+
+This is an interface-reference update to the existing tested worker skill, not new authority/behavior guidance. No live model API, credentials, real organization data or global skill installation was used. Fresh agents ran only through the supplied evaluation harness and read the skill alone.
+
+Baseline `/root/fr012_skill_reference` read the pre-FR-012 skill and identified the actual reference gap: it said status/steward were unimplemented and supplied no bounded discussion command or invocation interface. It correctly retained the existing authority/private recording boundaries. This demonstrated a reference gap rather than a discipline failure.
+
+After updating the interface table and brief host/recording guidance, fresh `/root/fr012_skill_green` retrieved `mz status --project alpha --json` and the complete assigned-project ask command shape with role/task/actor/worker/runtime/artifact settings. It correctly delegated exact model/token/secret host setup to installed help; acknowledged existing spending/privacy approval without asking again; distinguished persisted advisory response/handover from applied work; and required independent approval/private writing for actual decisions. It did not claim live provider truth or automatic activation, triage, decisions or spending. Remaining absence of standalone decision/event/handover CLI writers was identified accurately.
+
+The code tests execute every Available interface's actual help and the existing selected-project planning example. FR-012 installed CLI tests additionally run status and an actual configured ask adapter using a synthetic HTTP transport and parent-verified structural runtime records. Reference evaluation does not establish production authorization enforcement, live model access or real pilot readiness.

@@ -344,7 +344,7 @@ test('version-1 runtime databases upgrade with all prior records/history intact'
   db.close();
   const upgraded = core.openRuntimeState({ path: f.path });
   t.after(() => upgraded.close());
-  assert.equal(upgraded.getStatus().schemaVersion, 4);
+  assert.equal(upgraded.getStatus().schemaVersion, 5);
   assert.equal(upgraded.getInboxItem(sourceId).sourceId, actorId);
   assert.deepEqual(upgraded.getRun(workerId), {
     id: workerId,

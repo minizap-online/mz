@@ -94,3 +94,7 @@ FR-007 adds Core `inspectRuntimeState({path, now?, maxAgeMs?})`: inspect an exis
 FR-008 preserves the original InboxItem shape and adds optional typed intake metadata/read operations in a separate table. See [intake](intake.md); raw source files are outside Git/SQLite and need independent private backup/retention.
 
 FR-009 adds bounded private inbox views and append-only local triage snapshots/event linkage, preserving original intake provenance. Specialized CLI read functions never initialize/migrate state. See [inbox](inbox.md) and schema v4.
+
+## Steward references (FR-012)
+
+Migration005 adds append-only `steward_interactions` and `steward_decisions`. Core exposes interaction/run start and finish, bounded scoped reference lists, proposal lookup and structural approved-decision/event recording. Read-only `readStewardSnapshot` supplies scoped counts/history and backup freshness without initializing/upgrading state. Prose and handover live in separately backed-up private artifacts; approval and durable private knowledge writing precede structural decision references. See [steward interfaces and recovery](steward.md). These are trusted host primitives, not worker authorization grants.

@@ -1,4 +1,12 @@
 import type {
+  StewardInteraction,
+  StewardDecision,
+  StartStewardInteraction,
+  FinishStewardInteraction,
+  RecordStewardDecision,
+  StewardCursor,
+} from './steward-types.js';
+import type {
   InboxDetails,
   InboxTriageChange,
   InboxCursor,
@@ -100,6 +108,16 @@ export interface EventCursor {
   limit?: number;
 }
 export interface RuntimeTransaction {
+  getStewardDecisionForProposal(
+    interactionId: string,
+    proposalIndex: number,
+  ): StewardDecision | null;
+  getStewardInteraction(id: string): StewardInteraction | null;
+  listStewardInteractions(cursor?: StewardCursor): StewardInteraction[];
+  listStewardDecisions(cursor?: StewardCursor): StewardDecision[];
+  startStewardInteraction(input: StartStewardInteraction): StewardInteraction;
+  finishStewardInteraction(input: FinishStewardInteraction): StewardInteraction;
+  recordStewardDecision(input: RecordStewardDecision): StewardDecision;
   getInboxDetails(id: string): InboxDetails | null;
   listInbox(cursor?: InboxCursor): InboxDetails[];
   listInboxChanges(cursor: InboxHistoryCursor): InboxTriageChange[];

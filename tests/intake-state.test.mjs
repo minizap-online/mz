@@ -119,7 +119,7 @@ test('migration v2 to current schema preserves actual inbox, backup and linked e
   db.close();
   const upgraded = core.openRuntimeState({ path });
   t.after(() => upgraded.close());
-  assert.equal(upgraded.getStatus().schemaVersion, 4);
+  assert.equal(upgraded.getStatus().schemaVersion, 5);
   assert.deepEqual(upgraded.getInboxItem(id), { id, sourceId, receivedAt });
   assert.equal(upgraded.getInboxIntake(id), null);
   assert.equal(upgraded.getBackup(sourceId).outcome, 'succeeded');
