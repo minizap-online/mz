@@ -84,7 +84,7 @@ async function readContained(root: string, path: string): Promise<string> {
           path,
         );
       }
-      return new TextDecoder('utf-8', { fatal: true }).decode(
+      return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
         buffer.subarray(0, size),
       );
     } finally {

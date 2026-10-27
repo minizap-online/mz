@@ -109,7 +109,7 @@ export function parseMarkdown(
   const opening = /^---[ \t]*(?:\r?\n|$)/.exec(text);
   if (!opening) return { metadata: {}, body: text };
   const rest = text.slice(opening[0].length);
-  const closing = /^---[ \t]*(?:\r?\n|$)/m.exec(rest);
+  const closing = /(?:^|(?<=\n))---[ \t]*(?:\r?\n|$)/.exec(rest);
   if (!closing) {
     throw new CompanyRepositoryError(
       'INVALID_FRONT_MATTER',

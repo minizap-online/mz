@@ -492,3 +492,29 @@ test('default environment reads MZ_COMPANY_DIR without requiring caller options'
     else process.env.MZ_COMPANY_DIR = previous;
   }
 });
+
+for (const separator of ['\r', '\u2028', '\u2029']) {
+  test(`front matter delimiters cannot use ${JSON.stringify(separator)} as a line boundary`, async (t) => {
+    const root = await fixture(t, {
+      'before.md': `---\nx: hello${separator}---\nBODY`,
+      'after.md': `---\nx: value\n---${separator}BODY`,
+    });
+    const company = await load({ directory: root });
+    for (const name of ['before.md', 'after.md']) {
+      await assert.rejects(
+        company.readMarkdown(name),
+        failure('INVALID_FRONT_MATTER'),
+      );
+    }
+  });
+}
+
+test('normalizes exactly one leading Markdown BOM and accepts BOM-prefixed YAML', async (t) => {
+  const root = await fixture(t, {
+    'body.md': '\uFEFF\uFEFF# Body\n',
+    'bom.yaml': '\uFEFFrole: engineer\n',
+  });
+  const company = await load({ directory: root });
+  assert.equal((await company.readMarkdown('body.md')).body, '\uFEFF# Body\n');
+  assert.deepEqual(await company.readYaml('bom.yaml'), { role: 'engineer' });
+});

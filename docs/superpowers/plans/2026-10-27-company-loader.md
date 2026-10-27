@@ -42,12 +42,12 @@ Interfaces: `loadCompanyRepository(options?)` returns canonical root, version-1 
 
 Files: schemas/company-v1.schema.json, schemas/migrations/001-company-config.md, templates/company/{company.yaml,README.md}, docs/company-repository.md, README.md, AGENTS.md, docs/{workflow,milestones}.md, docs/tickets/FR-002.md.
 
-- [ ] Publish initial schema and manual scaffold migration contract; do not add a database migration.
-- [ ] Document exact precedence/API/errors, examples, privacy boundaries, and versioning.
-- [ ] Add tests that load the shipped generic starter, verify read-only behavior, and exercise all schema constraints.
-- [ ] Run `npm run check` and `npm run typecheck`; expect exit 0.
-- [ ] Request one independent review of the complete branch; fix important findings with regression tests.
-- [ ] Record evidence, sync issue/Project, commit, and prepare the authorized change for review.
+- [x] Publish initial schema and manual scaffold migration contract; do not add a database migration.
+- [x] Document exact precedence/API/errors, examples, privacy boundaries, and versioning.
+- [x] Add tests that load the shipped generic starter, verify read-only behavior, and exercise all schema constraints.
+- [x] Run `npm run check` and `npm run typecheck`; expect exit 0.
+- [x] Request one independent review of the complete branch; fix important findings with regression tests.
+- [x] Record evidence, sync issue/Project, commit, and prepare the authorized change for review.
 
 ## Execution ledger
 
@@ -61,3 +61,9 @@ Files: schemas/company-v1.schema.json, schemas/migrations/001-company-config.md,
 
 - Task 1 complete: API, discovery, structured errors, contained bounded reads, and strict parsing verified by npm test. Task 2 starter/schema/docs implemented.
 - Task 2 RED→GREEN: shipped-starter test failed CONFIG_NOT_FOUND before adding marker; Unicode-length regression failed before switching to code-point counting to match JSON Schema. Full npm run check and typecheck now pass, 74/74 tests.
+
+- Independent review: no Critical findings; one Important delimiter-boundary bug and one Minor double-BOM content-preservation bug. Added regressions that failed in all four cases.
+- Final Ruling: fix both document fidelity findings together in one pass: the small BOM issue is directly within the promised body-preservation contract, and leaving reproducible content loss would violate that contract. No deferred findings.
+
+- Final fixed: Unicode/bare-CR front matter delimiter regression RED→GREEN; double-BOM preservation regression RED→GREEN. Full suite 78/78, check/typecheck pass.
+- Task 2 complete: schema, starter migration, public API documentation, independent review and fixes complete. PR #17 prepared; GitHub CI must be green before merge.
