@@ -1,3 +1,4 @@
+import type { NewInboxIntake, InboxIntake } from './intake-types.js';
 import type {
   BackupRecord,
   BackupFreshness,
@@ -69,6 +70,7 @@ export interface NewRuntimeEvent {
   backupId?: string;
 }
 export interface NewInboxItem {
+  intake?: NewInboxIntake;
   id?: string;
   sourceId: string;
   actorId: string;
@@ -97,6 +99,7 @@ export interface RuntimeTransaction {
   finishRun(input: FinishRun): RuntimeRun;
   getRun(id: string): RuntimeRun | null;
   getInboxItem(id: string): InboxItem | null;
+  getInboxIntake(id: string): InboxIntake | null;
   listEvents(cursor?: EventCursor): RuntimeEvent[];
 }
 export interface RuntimeState extends RuntimeTransaction {
@@ -109,6 +112,7 @@ export interface RuntimeState extends RuntimeTransaction {
 }
 export interface RuntimeStateOptions {
   path: string;
+  existingOnly?: boolean;
 }
 export type RuntimeStateErrorCode =
   | 'INVALID_INPUT'

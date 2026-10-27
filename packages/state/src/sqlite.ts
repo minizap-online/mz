@@ -1,3 +1,4 @@
+import type { InboxIntake } from './intake-types.js';
 import { getBackupRecord, backupFreshness } from './backups.js';
 import { verifyDatabaseIntegrity } from './integrity.js';
 import { types } from 'node:util';
@@ -25,6 +26,7 @@ import {
 } from './migrations.js';
 import {
   cursor,
+  inboxIntake,
   eventType,
   invalid,
   newId,
@@ -44,8 +46,15 @@ import {
   type RuntimeTransaction,
 } from './types.js';
 
-function databasePath(options: RuntimeStateOptions): string {
-  const value = record(options, ['path'])['path'];
+function databasePath(options: RuntimeStateOptions): {
+  path: string;
+  existingOnly: boolean;
+} {
+  const values = record(options, ['path', 'existingOnly']);
+  const value = values['path'];
+  const existingOnly =
+    values['existingOnly'] === undefined ? false : values['existingOnly'];
+  if (typeof existingOnly !== 'boolean') return invalid('existingOnly');
   if (
     typeof value !== 'string' ||
     !value ||
@@ -60,6 +69,15 @@ function databasePath(options: RuntimeStateOptions): string {
   }
   try {
     const path = join(realpathSync(dirname(value)), basename(value));
+    if (existingOnly) {
+      if (!lstatSync(path).isFile())
+        throw new RuntimeStateError(
+          'INVALID_PATH',
+          'Select an existing regular runtime database file.',
+          'path',
+        );
+      return { path, existingOnly };
+    }
     try {
       closeSync(
         openSync(
@@ -84,7 +102,7 @@ function databasePath(options: RuntimeStateOptions): string {
         );
       }
     }
-    return path;
+    return { path, existingOnly };
   } catch (error) {
     throw stateError(error);
   }
@@ -101,8 +119,9 @@ export function createSqliteRuntimeState(
   options: RuntimeStateOptions,
 ): RuntimeState {
   let path: string;
+  let existingOnly: boolean;
   try {
-    path = databasePath(options);
+    ({ path, existingOnly } = databasePath(options));
   } catch (error) {
     throw stateError(error, 'INVALID_INPUT');
   }
@@ -117,7 +136,12 @@ export function createSqliteRuntimeState(
     throw stateError(error);
   }
   try {
-    inspectMigrations(db);
+    const existingVersion = inspectMigrations(db);
+    if (existingOnly && existingVersion === 0)
+      throw new RuntimeStateError(
+        'UNSUPPORTED_DATABASE',
+        'Select an initialized recognized MZ runtime database; existing-only access never initializes empty files.',
+      );
     if (
       db.prepare('PRAGMA journal_mode = WAL').get()?.['journal_mode'] !== 'wal'
     ) {
@@ -188,6 +212,14 @@ export function createSqliteRuntimeState(
     const row = db.prepare(INBOX_QUERY).get(uuid(id, 'id'));
     return row ? ({ ...row } as unknown as InboxItem) : null;
   }
+  function getInboxIntake(id: string): InboxIntake | null {
+    const row = db
+      .prepare(
+        'SELECT inbox_item_id AS inboxItemId, source_type AS sourceType, source_bytes AS sourceBytes, scope, created_by AS createdBy, summary_status AS summaryStatus FROM inbox_intake WHERE inbox_item_id = ?',
+      )
+      .get(uuid(id, 'id'));
+    return row ? ({ ...row } as unknown as InboxIntake) : null;
+  }
   function appendEvent(input: unknown): RuntimeEvent {
     const value = record(input, [
       'id',
@@ -220,14 +252,26 @@ export function createSqliteRuntimeState(
     } as unknown as RuntimeEvent;
   }
   function createInboxItem(input: unknown): InboxItem {
-    const value = record(input, ['id', 'sourceId', 'actorId', 'receivedAt']);
+    const value = record(input, [
+      'id',
+      'sourceId',
+      'actorId',
+      'receivedAt',
+      'intake',
+    ]);
     const id = newId(value['id']);
     const sourceId = uuid(value['sourceId'], 'sourceId');
     const actorId = uuid(value['actorId'], 'actorId');
     const receivedAt = timestamp(value['receivedAt'], 'receivedAt');
+    const intake =
+      value['intake'] === undefined ? undefined : inboxIntake(value['intake']);
     db.prepare(
       'INSERT INTO inbox_items (id, source_id, received_at) VALUES (?, ?, ?)',
     ).run(id, sourceId, receivedAt);
+    if (intake)
+      db.prepare(
+        'INSERT INTO inbox_intake (inbox_item_id, source_type, source_bytes, scope, created_by) VALUES (?, ?, ?, ?, ?)',
+      ).run(id, intake.sourceType, intake.sourceBytes, intake.scope, actorId);
     appendEvent({
       type: 'inbox.created',
       actorId,
@@ -296,6 +340,7 @@ export function createSqliteRuntimeState(
       startRun: (input) => perform(scope, () => startRun(input)),
       finishRun: (input) => perform(scope, () => finishRun(input)),
       getRun: (id) => perform(scope, () => getRun(id)),
+      getInboxIntake: (id) => perform(scope, () => getInboxIntake(id)),
       getInboxItem: (id) => perform(scope, () => getInboxItem(id)),
       listEvents: (input) => perform(scope, () => listEvents(input)),
     } satisfies RuntimeTransaction);
@@ -367,6 +412,7 @@ export function createSqliteRuntimeState(
   const freshness = (input?: BackupFreshnessPolicy): BackupFreshness =>
     backupFreshness(db, input);
   const runtime = Object.freeze({
+    getInboxIntake: (id) => query(() => getInboxIntake(id)),
     getBackup: (id) => query(() => getBackup(id)),
     getBackupFreshness: (policy) => query(() => freshness(policy)),
     verifyIntegrity: () =>

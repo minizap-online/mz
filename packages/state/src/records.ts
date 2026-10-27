@@ -1,3 +1,8 @@
+import {
+  MAX_INTAKE_BYTES,
+  type InboxScope,
+  type NewInboxIntake,
+} from './intake-types.js';
 import { randomUUID } from 'node:crypto';
 import {
   RUNTIME_EVENT_TYPES,
@@ -89,4 +94,31 @@ export function cursor(input: unknown): {
   )
     return invalid('limit');
   return { afterSequence, limit };
+}
+
+export function inboxScope(value: unknown): InboxScope {
+  if (value === undefined) return 'unclassified';
+  if (
+    value === 'unclassified' ||
+    value === 'company' ||
+    value === 'project-candidate' ||
+    (typeof value === 'string' && /^project:[a-z][a-z0-9-]{0,63}$/.test(value))
+  )
+    return value as InboxScope;
+  return invalid('scope');
+}
+export function inboxIntake(input: unknown): Required<NewInboxIntake> {
+  const values = record(input, ['sourceType', 'sourceBytes', 'scope']);
+  const sourceType = values['sourceType'];
+  const sourceBytes = values['sourceBytes'];
+  if (sourceType !== 'file' && sourceType !== 'stdin')
+    return invalid('sourceType');
+  if (
+    typeof sourceBytes !== 'number' ||
+    !Number.isSafeInteger(sourceBytes) ||
+    sourceBytes < 1 ||
+    sourceBytes > MAX_INTAKE_BYTES
+  )
+    return invalid('sourceBytes');
+  return { sourceType, sourceBytes, scope: inboxScope(values['scope']) };
 }

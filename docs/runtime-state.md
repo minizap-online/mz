@@ -24,7 +24,7 @@ const events = state.listEvents({ afterSequence: 0, limit: 100 });
 state.close();
 ```
 
-The path must be absolute and its parent accessible. In-memory paths, database-file symlinks, and nonregular files are rejected; a new file uses mode 0600. Existing file permissions are preserved, so the control-plane operator remains responsible for them and the parent directory. No path is inferred from company config. `close()` is idempotent; other methods reject use after close.
+The path must be absolute and its parent accessible. In-memory paths, database-file symlinks, and nonregular files are rejected; a new file uses mode 0600. Existing file permissions are preserved, so the control-plane operator remains responsible for them and the parent directory. No path is inferred from company config. `close()` is idempotent; other methods reject use after close. FR-008 adds `existingOnly: true` for callers such as ingest: require an existing regular recognized MZ database, reject missing/uninitialized/foreign files before initialization, and retain supported forward upgrades. The default opener still initializes a new empty file as originally documented. Coordinate file replacement with running processes; host path layout is trusted.
 
 The adapter verifies WAL rather than silently falling back to another journal mode. Foreign keys, recursive triggers, FULL synchronous durability, and a bounded 250 ms writer timeout apply. `getStatus()` reports the schema version, WAL, and foreign-key state. It is not a backup health check. Use local SQLite-compatible storage; see [backup health and restore](backups.md) for the FR-005 contract.
 
@@ -68,7 +68,7 @@ Callbacks must be synchronous. Async functions and returned thenables fail; tran
 
 ## Schema and errors
 
-Current schema is [v2](../schemas/runtime-state-v2.md), extending [v1 and its migration rules](../schemas/runtime-state-v1.md). Reopening is idempotent. Foreign databases, unsupported future versions, modified checksums, and altered schema objects fail rather than being treated as an empty database. There is no automatic migration repair or downgrade.
+Current schema is [v3](../schemas/runtime-state-v3.md), extending [v2](../schemas/runtime-state-v2.md) and [v1 and its migration rules](../schemas/runtime-state-v1.md). Reopening is idempotent. Foreign databases, unsupported future versions, modified checksums, and altered schema objects fail rather than being treated as an empty database. There is no automatic migration repair or downgrade.
 
 `RuntimeStateError` provides a stable code and optional known field name. Boundary errors never retain raw SQL, driver messages, callback messages/causes, or offending values. Catch and report the safe error rather than logging the rejected input.
 
@@ -90,3 +90,5 @@ Tests create temporary synthetic databases. They verify migrations/rollback, sch
 ## Diagnostic inspection
 
 FR-007 adds Core `inspectRuntimeState({path, now?, maxAgeMs?})`: inspect an existing current-schema regular absolute database with read-only SQLite access, migration/schema/integrity/FK/WAL checks and shared backup freshness under one read transaction. It never creates a missing main file, migrates, repairs, or appends events. SQLite may manage WAL sidecars. Old/foreign/empty/drifted files fail safely. See [doctor](doctor.md) for CLI checks and limitations.
+
+FR-008 preserves the original InboxItem shape and adds optional typed intake metadata/read operations in a separate table. See [intake](intake.md); raw source files are outside Git/SQLite and need independent private backup/retention.

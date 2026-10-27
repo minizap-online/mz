@@ -16,7 +16,7 @@ Core will own domain types, capabilities, and access to runtime state. CLI, cont
 
 SQLite must not become a parallel editable task tracker. Runtime records may cache references or observations but cannot override provider work status. Curated project status summarizes evidence and links issues rather than duplicating an editable board.
 
-Before M-02 implementation, define private intake retention and promotion explicitly. Raw intake and untrusted feedback remain private. Triage may deliberately promote a sanitized work item to an issue and record the link; ingest alone never publishes content or grants authority. Public implementation issues contain generic, reusable work only. Company planning and organizational discussions belong in the private company repository and private planning board.
+M-02 uses the explicit [private intake retention/promotion policy](intake-storage.md): raw sources remain outside Git in private host files until operator removal; SQLite keeps structural metadata. See [intake implementation](intake.md). Raw intake and untrusted feedback remain private. Triage may deliberately promote a sanitized work item to an issue and record the link; ingest alone never publishes content or grants authority. Public implementation issues contain generic, reusable work only. Company planning and organizational discussions belong in the private company repository and private planning board.
 
 Project activation, organizational authority changes, and spending retain human authorization. Routine work inside approved project capabilities can proceed autonomously. A worker may never grant itself new authority.
 
