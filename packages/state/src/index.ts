@@ -30,3 +30,9 @@ export {
   finishRuntimeBackup,
   snapshotRuntimeState,
 } from './backup-integration.js';
+
+export { inspectSqliteRuntimeState } from './inspection.js';
+export type {
+  RuntimeInspectionOptions,
+  RuntimeInspection,
+} from './inspection.js';

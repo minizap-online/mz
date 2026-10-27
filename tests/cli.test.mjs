@@ -49,7 +49,6 @@ for (const flag of ['--version', '-v']) {
 
 // Catch permissive parsing, misleading success for future commands, and argument disclosure.
 for (const args of [
-  ['doctor'],
   ['ingest', 'idea.md'],
   ['--unknown'],
   ['--help', 'extra'],

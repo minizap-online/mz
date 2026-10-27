@@ -86,3 +86,7 @@ Current schema is [v2](../schemas/runtime-state-v2.md), extending [v1 and its mi
 | `RUN_NOT_FOUND`, `RUN_FINISHED`             | Start the run first or avoid finishing a terminal run again.                          |
 
 Tests create temporary synthetic databases. They verify migrations/rollback, schema integrity, append-only triggers, audit atomicity, cursor order, state lifecycle, contention, rejected-content absence, and clean installation. FR-005 adds `getBackup`, `getBackupFreshness`, and `verifyIntegrity`; see [backups](backups.md) for their contract and fixture restore evidence. `STATE_CORRUPT` means integrity verification failed. No real organization state, remote backup, or production restore was exercised.
+
+## Diagnostic inspection
+
+FR-007 adds Core `inspectRuntimeState({path, now?, maxAgeMs?})`: inspect an existing current-schema regular absolute database with read-only SQLite access, migration/schema/integrity/FK/WAL checks and shared backup freshness under one read transaction. It never creates a missing main file, migrates, repairs, or appends events. SQLite may manage WAL sidecars. Old/foreign/empty/drifted files fail safely. See [doctor](doctor.md) for CLI checks and limitations.

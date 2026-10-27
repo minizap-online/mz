@@ -1,6 +1,6 @@
 # Company repository loader
 
-FR-002 exposes a read-only API in `@mz/core`. It locates private company knowledge and reads selected documents; it does not contact GitHub, load the whole handbook, write runtime state, resolve secrets, compile worker context, or activate projects. CLI help/version remain the only implemented commands.
+FR-002 exposes a read-only API in `@mz/core`. It locates private company knowledge and reads selected documents; it does not contact GitHub, load the whole handbook, write runtime state, resolve secrets, compile worker context, or activate projects. The CLI also provides [environment doctor](doctor.md); the loader remains read-only.
 
 ## Configure or discover
 

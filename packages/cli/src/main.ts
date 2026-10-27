@@ -7,7 +7,7 @@ const metadata = JSON.parse(
 ) as {
   version: string;
 };
-const result = runCli(process.argv.slice(2), metadata.version);
+const result = await runCli(process.argv.slice(2), metadata.version);
 process.stdout.write(result.stdout);
 process.stderr.write(result.stderr);
 process.exitCode = result.exitCode;
