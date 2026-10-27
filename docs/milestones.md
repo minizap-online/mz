@@ -46,6 +46,8 @@ Tickets: [FR-010](tickets/FR-010.md), [FR-011](tickets/FR-011.md)
 
 ## M-04 Project steward
 
+[Implementation verification](milestone-m04-verification.md) covers status, bounded advisory ask and private recording. The real-pilot handoff remains a human boundary; FR-012 is not closed on synthetic evidence.
+
 Exit criteria: The owner can obtain status and discuss decisions and work without reconstructing project history.
 
 Tickets: [FR-012](tickets/FR-012.md)

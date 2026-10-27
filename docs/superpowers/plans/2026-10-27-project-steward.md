@@ -20,22 +20,22 @@
 
 ## Task 1: Neutral state and read-only status
 
-- [ ] Reconcile/sync FR-012; record backend question and independent-work scope.
-- [ ] Failing tests for migration005 interaction/run/decision atomicity, scopes, append-only references, read-only facts and v4 preservation.
-- [ ] Implement typed Core/state records/readers and neutral worker contract.
-- [ ] Implement bounded curated status with source evidence and honest unavailable fields; real CLI/status tests.
+- [x] Reconcile/sync FR-012; record backend question and independent-work scope.
+- [x] Failing tests for migration005 interaction/run/decision atomicity, scopes, append-only references, read-only facts and v4 preservation.
+- [x] Implement typed Core/state records/readers and neutral worker contract.
+- [x] Implement bounded curated status with source evidence and honest unavailable fields; real CLI/status tests.
 
 ## Task 2: Bounded worker and private recording
 
-- [ ] Resolve/requested backend or record a justified isolated adapter choice, verify exact invocation contract from authoritative sources.
-- [ ] Failing tests for request/response validation, same-scope history, bounds/failures and no action execution.
-- [ ] Implement actual configured invocation adapter and ask orchestration/private durable artifacts with run outcomes.
-- [ ] Implement/test explicit approved decision private knowledge writer plus structural audit linkage.
-- [ ] Strict CLI ask/host config, installed workflow and safe output; update thin skill using observed interface tests.
+- [x] Resolve/requested backend or record a justified isolated adapter choice, verify exact invocation contract from authoritative sources.
+- [x] Failing tests for request/response validation, same-scope history, bounds/failures and no action execution.
+- [x] Implement actual configured invocation adapter and ask orchestration/private durable artifacts with run outcomes.
+- [x] Implement/test explicit approved decision private knowledge writer plus structural audit linkage.
+- [x] Strict CLI ask/host config, installed workflow and safe output; update thin skill using observed interface tests.
 
 ## Task 3: Integration and pilot handoff
 
-- [ ] Documentation, current interface/recording contracts, operational limits and concrete real-pilot handoff.
+- [x] Documentation, current interface/recording contracts, operational limits and concrete real-pilot handoff.
 - [ ] Independent review and regression fixes; check/typecheck/diff/links/skill validation.
 - [ ] PR/CI/merge/main verification, issue/Project evidence; keep real-pilot acceptance unproven until actual human-authorized start.
 - [ ] Request only the necessary missing pilot/operational authorization once concrete reviewable work is ready. No speculative M-05+ functionality.
@@ -49,3 +49,5 @@
 - Ruling: use fixed-endpoint tool-free OpenAI Responses rather than installed Codex — local read-only sandbox does not establish the required no-host-read/advisory boundary; explicit host model/key/token configuration is required and no live request is authorized by a missing preference reply. Cost if wrong: a different backend remains a later adapter choice; no default spending or model is introduced.
 - Ruling: approved decision writes precede SQLite, with retained orphan evidence on reference failure — no cross-store transaction exists. Cost if wrong: operator must reconcile orphan files; no false success or overwritten history.
 - Full baseline after foundation: npm run check passed 385 tests. Subsequent task checks in progress; new regression tests verify duplicate approval/write prevention and durable-response/pending-state recovery. Real pilot remains unstarted.
+
+- Task 1/2 complete at 9e0da5f: npm run check passed 402/402 tests plus build/lint/format; npm run typecheck, skill quick validator and changed-doc local links passed. Task 3 independent review underway. Fresh reference baseline/green both preserved authority boundaries and corrected the obsolete steward availability gap.
