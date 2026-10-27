@@ -3,11 +3,11 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 
 // Catch bin links targeting nonexistent build outputs during npm ci.
-test('clean install and build expose an executable mz from another directory', () => {
+test('clean install exposes mz and the Core runtime API from another directory', () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const fresh = mkdtempSync(join(tmpdir(), 'mz-install-'));
   try {
@@ -55,6 +55,23 @@ test('clean install and build expose an executable mz from another directory', (
     );
     assert.equal(result.stdout, `${metadata.version}\n`);
     assert.equal(result.stderr, '');
+    const statePath = join(fresh, 'runtime.sqlite3');
+    const runtime = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+      import { openRuntimeState } from ${JSON.stringify(pathToFileURL(join(fresh, 'packages/core/dist/index.js')).href)};
+      const state = openRuntimeState({ path: ${JSON.stringify(statePath)} });
+      if (state.getStatus().journalMode !== 'wal') throw new Error('WAL unavailable');
+      state.close();
+    `,
+      ],
+      { cwd: tmpdir(), encoding: 'utf8', timeout: 5000 },
+    );
+    assert.ifError(runtime.error);
+    assert.equal(runtime.status, 0, runtime.stderr);
   } finally {
     rmSync(fresh, { recursive: true, force: true });
   }
