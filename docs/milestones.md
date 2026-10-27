@@ -26,6 +26,8 @@ Tickets: [FR-002](tickets/FR-002.md), [FR-003](tickets/FR-003.md), [FR-004](tick
 
 ## M-02 Intake and inbox
 
+Implementation exit verified 2026-10-27: [requirement-by-requirement evidence and live operational limits](milestone-m02-verification.md). FR-008/FR-009 complete; M-03 is next.
+
 Exit criteria: A Markdown idea becomes an inbox item without manual restructuring and can be inspected and triaged.
 
 Tickets: [FR-008](tickets/FR-008.md), [FR-009](tickets/FR-009.md)

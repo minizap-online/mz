@@ -50,7 +50,7 @@ Files: docs/inbox.md, schemas/runtime-state-v4.md, README/AGENTS/runtime/workflo
 
 - [x] Document local review semantics, read/mutation boundaries, source inspection and history/recovery limitations.
 - [x] Independent review, regression fixes, final check/typecheck/diff/links.
-- [ ] PR/CI/merge/main verification, issue/Project Done; audit M-02 exit before FR-010.
+- [x] PR/CI/merge/main verification, issue/Project Done; audit M-02 exit before FR-010.
 
 ## Ledger
 
@@ -60,3 +60,5 @@ Files: docs/inbox.md, schemas/runtime-state-v4.md, README/AGENTS/runtime/workflo
 
 - Verification: red state15/read5/CLI18 before API implementation; all green. Final check339, typecheck/diff/local links passed. Existing migrations001–003 unchanged. Strengthened v3 preservation and encrypted snapshot restore to compare actual triage history.
 - Independent review: no findings; reviewer passed 43 inbox/migration/install tests. No production/private data or remote action used.
+
+- Integration: PR #24 merged as 5bfd343 after exact-head push/PR CI passed. Merged main check/typecheck passed339; issue/Project Done. M-02 exit audited with artifact/test evidence; next FR-010 in M-03.
