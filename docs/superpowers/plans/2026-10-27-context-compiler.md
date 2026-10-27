@@ -49,7 +49,7 @@ Files: docs/context.md, templates/company role/task/project metadata examples, R
 
 - [x] Document captured source graph, required files, bounds/traceability/credential/private output limits and informational authority.
 - [x] Independent review; fix findings and run final check/typecheck/links/diff.
-- [ ] PR/CI/merge/main verification, issue/Project Done; continue FR-011 thin skill.
+- [x] PR/CI/merge/main verification, issue/Project Done; continue FR-011 thin skill.
 
 ## Ledger
 
@@ -61,3 +61,5 @@ Files: docs/context.md, templates/company role/task/project metadata examples, R
 - Review: two Important findings (CR-only front matter lost declarations; mapping keys bypassed guards) reproduced with red regressions. Core optional normalization now occurs before parsing, preserving default behavior; keys reject controls/obvious credential patterns without rewriting/collisions. Reviewer confirmed both fixed, independently passed97 focused tests, no new findings.
 
 - Final local verification: check371, typecheck/diff/links passed; generic template smoke12 sources/3852 text bytes. Core company schema and SQLite migrations unchanged. Compiler20/CLI12 tests plus installed workflow passed. Ready for PR/CI.
+
+- Integration: PR #25 merged as36c163c after exact-head CI passed; main check/typecheck passed371. Issue/Project Done. Next FR-011 thin skill; M-03 exit remains open.
