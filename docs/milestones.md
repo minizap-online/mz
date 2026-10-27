@@ -36,6 +36,8 @@ Tickets: [FR-008](tickets/FR-008.md), [FR-009](tickets/FR-009.md)
 
 ## M-03 Context compiler and skill
 
+Implementation exit verified 2026-10-27: [requirement-by-requirement evidence and operational limits](milestone-m03-verification.md). FR-010/FR-011 complete; M-04 is next.
+
 Exit criteria: A fresh worker receives bounded useful context without old chat history, using the thin MZ skill.
 
 Tickets: [FR-010](tickets/FR-010.md), [FR-011](tickets/FR-011.md)
