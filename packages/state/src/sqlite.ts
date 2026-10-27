@@ -1,3 +1,4 @@
+import { getBackupRecord, backupFreshness } from './backups.js';
 import { verifyDatabaseIntegrity } from './integrity.js';
 import { types } from 'node:util';
 import {
@@ -361,62 +362,10 @@ export function createSqliteRuntimeState(
       throw stateError(error);
     }
   }
-  function getBackup(id: string): BackupRecord | null {
-    const row = db
-      .prepare(
-        'SELECT id, destination_id AS destinationId, actor_id AS actorId, started_at AS startedAt, finished_at AS finishedAt, outcome, encrypted_ack FROM backups WHERE id = ?',
-      )
-      .get(uuid(id, 'id'));
-    if (!row) return null;
-    const { encrypted_ack, ...fields } = row;
-    return {
-      ...fields,
-      encryptionAcknowledged: encrypted_ack === 1 ? true : null,
-    } as unknown as BackupRecord;
-  }
-  function freshness(input: BackupFreshnessPolicy = {}): BackupFreshness {
-    const values = record(input, ['now', 'maxAgeMs']);
-    const now = Date.parse(timestamp(values['now'], 'now'));
-    const maxAge = values['maxAgeMs'] ?? 86400000;
-    if (
-      typeof maxAge !== 'number' ||
-      !Number.isSafeInteger(maxAge) ||
-      maxAge <= 0
-    )
-      return invalid('maxAgeMs');
-    const last = db
-      .prepare(
-        "SELECT started_at, finished_at FROM backups WHERE outcome = 'succeeded' ORDER BY started_at DESC, rowid DESC LIMIT 1",
-      )
-      .get();
-    const attempt = db
-      .prepare('SELECT id FROM backups ORDER BY rowid DESC LIMIT 1')
-      .get();
-    const latestAttempt = attempt ? getBackup(String(attempt['id'])) : null;
-    if (!last)
-      return {
-        status: 'never',
-        lastSuccessAt: null,
-        lastSnapshotStartedAt: null,
-        ageMs: null,
-        latestAttempt,
-      };
-    const lastSuccessAt = String(last['finished_at']);
-    const lastSnapshotStartedAt = String(last['started_at']);
-    const ageMs = now - Date.parse(lastSnapshotStartedAt);
-    if (!Number.isFinite(ageMs))
-      throw new RuntimeStateError(
-        'STATE_CORRUPT',
-        'Invalid stored backup timestamp.',
-      );
-    return {
-      status: ageMs < 0 ? 'clock-skew' : ageMs <= maxAge ? 'fresh' : 'stale',
-      lastSuccessAt,
-      lastSnapshotStartedAt,
-      ageMs: ageMs < 0 ? null : ageMs,
-      latestAttempt,
-    };
-  }
+  const getBackup = (id: string): BackupRecord | null =>
+    getBackupRecord(db, id);
+  const freshness = (input?: BackupFreshnessPolicy): BackupFreshness =>
+    backupFreshness(db, input);
   const runtime = Object.freeze({
     getBackup: (id) => query(() => getBackup(id)),
     getBackupFreshness: (policy) => query(() => freshness(policy)),

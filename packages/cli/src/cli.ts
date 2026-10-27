@@ -1,21 +1,28 @@
+import { runDoctorCli } from './doctor.js';
 export interface CliResult {
   stdout: string;
   stderr: string;
   exitCode: number;
 }
 
-const help = `MZ — organization toolbox (bootstrap)
+const help = `MZ — organization toolbox
 
 Usage: mz [--help | --version]
+       mz doctor [options]
 
 Options:
   -h, --help     Show this help (also: mz help)
   -v, --version  Show the installed version
 
-Only help and version are available in this bootstrap.
+Commands:
+  doctor        Inspect environment and existing state (mz doctor --help)
 `;
 
-export function runCli(args: readonly string[], version: string): CliResult {
+export async function runCli(
+  args: readonly string[],
+  version: string,
+): Promise<CliResult> {
+  if (args[0] === 'doctor') return runDoctorCli(args.slice(1));
   if (
     args.length === 0 ||
     (args.length === 1 && ['help', '--help', '-h'].includes(args[0]!))

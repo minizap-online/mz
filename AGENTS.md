@@ -4,7 +4,7 @@
 
 This checkout contains MZ, the organization toolbox, with the M-00 bootstrap and M-01 company loading, runtime state, and secret handling. Read `MZ_IMPLEMENTATION_PLAN.md`, `docs/architecture.md`, and the active milestone before changes. Actual organization context belongs in the separate private company repository.
 
-The TypeScript layout is `packages/{core,cli,context,state,skill}` plus `packages/providers/github/`. Shared schemas belong in `schemas/`, reusable scaffolding in `templates/`, documentation in `docs/`, and generic examples in `examples/`. The CLI implements only help/version. Core provides the read-only company repository loader (FR-002); state provides the SQLite adapter through Core, while the GitHub provider is an audited offline skeleton and context remains a placeholder. Read `docs/company-repository.md`, `docs/runtime-state.md`, `docs/secrets.md`, `docs/backups.md`, and `docs/providers.md` before changing those boundaries. `docs/` contains ticket and milestone tracking. Keep private company configuration separate from reusable MZ implementation.
+The TypeScript layout is `packages/{core,cli,context,state,skill}` plus `packages/providers/github/`. Shared schemas belong in `schemas/`, reusable scaffolding in `templates/`, documentation in `docs/`, and generic examples in `examples/`. The CLI implements help/version and diagnostic `mz doctor`. Core provides the read-only company repository loader (FR-002); state provides the SQLite adapter through Core, while the GitHub provider is an audited offline skeleton and context remains a placeholder. Read `docs/company-repository.md`, `docs/runtime-state.md`, `docs/secrets.md`, `docs/backups.md`, `docs/providers.md`, and `docs/doctor.md` before changing those boundaries. `docs/` contains ticket and milestone tracking. Keep private company configuration separate from reusable MZ implementation.
 
 ## Build, Test, and Development Commands
 
@@ -12,7 +12,7 @@ Read `docs/workflow.md`, `docs/tickets/README.md`, and the active milestone befo
 
 Requires Node.js 24+ and npm 11+. Use `npm ci`, `npm run build`, `npm test`, `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run check`. Run `npm run format` to apply formatting. After building, use `npm run mz -- --help` or `npm exec -- mz --version`.
 
-Planned CLI examples include `mz doctor` for environment checks, `mz ingest idea.md` for intake, and `mz context` for bounded worker context. Treat these as target interfaces until implemented.
+Use `mz doctor` for environment checks; see `docs/doctor.md` for explicit state and secret configuration. `mz ingest idea.md` and `mz context` remain target interfaces until implemented.
 
 ## Coding Style & Naming Conventions
 

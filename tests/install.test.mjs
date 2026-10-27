@@ -76,6 +76,24 @@ test('clean install exposes mz and the Core runtime API from another directory',
     );
     assert.ifError(runtime.error);
     assert.equal(runtime.status, 0, runtime.stderr);
+    const doctor = spawnSync(
+      join(fresh, 'node_modules/.bin/mz'),
+      ['doctor', '--json'],
+      {
+        cwd: tmpdir(),
+        encoding: 'utf8',
+        env: { PATH: process.env.PATH, MZ_RUNTIME_DB: statePath },
+        timeout: 45000,
+      },
+    );
+    assert.ifError(doctor.error);
+    assert.equal(doctor.status, 1, doctor.stderr);
+    assert.equal(doctor.stderr, '');
+    assert.equal(
+      JSON.parse(doctor.stdout).checks.find((check) => check.id === 'runtime')
+        .status,
+      'pass',
+    );
   } finally {
     rmSync(fresh, { recursive: true, force: true });
   }

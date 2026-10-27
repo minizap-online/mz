@@ -9,5 +9,8 @@
   },
   "bin": {
     "mz": "./bin/mz.js"
+  },
+  "dependencies": {
+    "@mz/core": "0.1.0"
   }
 }
