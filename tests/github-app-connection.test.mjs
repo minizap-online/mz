@@ -422,7 +422,13 @@ test('App init accepts the normal SSH URL and reaches organization setup before 
   assert.equal(result.exitCode, 1);
   assert.match(result.stderr, /GitHub App connection/i);
 });
-for (const scenario of ['clone', 'existing', 'foreign-fetch', 'foreign-push'])
+for (const scenario of [
+  'clone',
+  'existing',
+  'foreign-fetch',
+  'foreign-push',
+  'rewrite',
+])
   test('App SSH transport: ' + scenario, async (t) => {
     const existing = scenario !== 'clone';
     const { runInitCli } = await import('../packages/cli/dist/init.js');
@@ -442,7 +448,7 @@ for (const scenario of ['clone', 'existing', 'foreign-fetch', 'foreign-push'])
     const calls = join(root, 'git-calls');
     await writeFile(
       join(bin, 'git'),
-      `#!${process.execPath}\nimport fs from'node:fs';import{spawnSync}from'node:child_process';const args=process.argv.slice(2);fs.appendFileSync(${JSON.stringify(calls)},JSON.stringify(args)+'\\n');if(args[0]==='clone'){const dest=args.at(-1);const r=spawnSync('/usr/bin/git',['clone','--',${JSON.stringify(bare)},dest],{stdio:'ignore'});if(r.status)process.exit(r.status);spawnSync('/usr/bin/git',['-C',dest,'remote','set-url','origin',args.at(-2)]);process.exit(0);}if(args[0]==='ls-remote')process.exit(0);const r=spawnSync('/usr/bin/git',args,{stdio:'inherit'});process.exit(r.status??1);`,
+      `#!${process.execPath}\nimport fs from'node:fs';import{spawnSync}from'node:child_process';const args=process.argv.slice(2);fs.appendFileSync(${JSON.stringify(calls)},JSON.stringify(args)+'\\n');if(args[0]==='clone'){const dest=args.at(-1);const r=spawnSync('/usr/bin/git',['clone','--',${JSON.stringify(bare)},dest],{stdio:'ignore'});if(r.status)process.exit(r.status);spawnSync('/usr/bin/git',['-C',dest,'remote','set-url','origin',args.at(-2)]);process.exit(0);}if(args[0]==='ls-remote'&&!args.includes('--get-url'))process.exit(0);const r=spawnSync('/usr/bin/git',args,{stdio:'inherit'});process.exit(r.status??1);`,
       { mode: 0o700 },
     );
     await writeFile(
@@ -457,6 +463,15 @@ for (const scenario of ['clone', 'existing', 'foreign-fetch', 'foreign-push'])
       XDG_STATE_HOME: join(root, 'state'),
       XDG_DATA_HOME: join(root, 'data'),
     };
+    if (scenario === 'rewrite') {
+      const globalFile = join(root, 'git-global');
+      await writeFile(
+        globalFile,
+        '[url "git@github.com:"]\n insteadOf = https://github.com/\n',
+        { mode: 0o600 },
+      );
+      env.GIT_CONFIG_GLOBAL = globalFile;
+    }
     const notices = [];
     if (existing) {
       await mkdir(company, { recursive: true, mode: 0o700 });
@@ -503,6 +518,12 @@ for (const scenario of ['clone', 'existing', 'foreign-fetch', 'foreign-push'])
         question: async (_label, fallback) => fallback,
       },
     );
+    if (scenario === 'rewrite') {
+      assert.equal(result.exitCode, 1);
+      assert.match(result.stderr, /HTTPS transport/);
+      assert.equal(providerCalls, 0);
+      return;
+    }
     if (scenario.startsWith('foreign')) {
       assert.equal(result.exitCode, 1);
       assert.match(result.stderr, /repository selection/);

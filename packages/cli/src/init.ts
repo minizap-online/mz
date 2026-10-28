@@ -361,6 +361,30 @@ export async function runInitCli(
       let gitEnv: NodeJS.ProcessEnv;
       let profileDirectory: string | undefined;
       if (selectedMethod === 'app') {
+        if (repo) {
+          stage = 'GitHub App HTTPS transport (check Git URL rewrite rules)';
+          const directories: (string | undefined)[] = [undefined];
+          if (entries.length > 0) directories.push(companyDirectory);
+          for (const directory of directories) {
+            const effective = await execute(
+              'git',
+              [
+                ...(directory ? ['-C', directory] : []),
+                'ls-remote',
+                '--get-url',
+                transportRepository,
+              ],
+              { env, timeout: 5000, maxBuffer: 4096 },
+            );
+            const value = effective.stdout.trim();
+            if (
+              githubRemote(value)?.protocol !== 'https' ||
+              appRepository(value).toLowerCase() !==
+                transportRepository.toLowerCase()
+            )
+              throw new Error();
+          }
+        }
         stage = 'GitHub App connection';
         if (values['github-app-file'])
           await importAppConnection({
