@@ -12,6 +12,9 @@
     },
     {
       "path": "../context"
+    },
+    {
+      "path": "../providers/github"
     }
   ]
 }

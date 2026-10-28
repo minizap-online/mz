@@ -1,3 +1,5 @@
+import { appGitEnvironment, checkAppClient } from './github-app-transport.js';
+import { loadAppConnection, appDirectory } from './github-app-store.js';
 import {
   preparePrivateGitHubClient,
   checkPrivateGitHubClient,
@@ -241,7 +243,7 @@ export async function prepareGitHubAccess(
         'Fine-grained GitHub tokens require an HTTPS repository URL.',
       );
     options.notice(
-      'Create/review the fine-grained token at https://github.com/settings/personal-access-tokens/new . The GitHub UI is where repository selection, permission grants, expiry and any org approval are set. Enter it only in the next hidden credential field, never in company conversation.\n',
+      `Create/review the fine-grained token at https://github.com/settings/personal-access-tokens/new?target_name=${remote.owner}&expires_in=30&contents=write&issues=write&pull_requests=write&organization_projects=write . The GitHub UI is where repository selection, permission grants, expiry and any org approval are set. Enter it only in the next hidden credential field, never in company conversation.\n`,
     );
     const use = async (bytes: Buffer): Promise<void> => {
       try {
@@ -392,6 +394,15 @@ export async function companyGitHubEnvironment(
     read('mz.github.version'),
   ]);
   if (profile === undefined && version === undefined) return env;
+  if (version === '2') {
+    if (
+      profile !== appDirectory(env) ||
+      !(await loadAppConnection({ companyDirectory, env }))
+    )
+      throw new Error();
+    await checkAppClient(companyDirectory, env);
+    return appGitEnvironment(companyDirectory, env);
+  }
   if (profile === undefined || version !== '1') throw new Error();
   const expected = join(
     dirname(resolve(installationPaths(env).configFile)),

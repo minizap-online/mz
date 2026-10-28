@@ -1,3 +1,11 @@
+import type { AppRequest } from '@mz/github';
+import { connectGitHubApp } from './github-app-setup.js';
+import { importAppConnection, loadAppConnection } from './github-app-store.js';
+import {
+  appGitEnvironment,
+  bindAppGit,
+  prepareAppClient,
+} from './github-app-transport.js';
 import {
   prepareGitHubAccess,
   githubClientEnvironment,
@@ -29,7 +37,10 @@ Options:
   --repository URL        Clone an existing HTTPS or git@host company repository
   --id SLUG               Technical organization identity for a new company marker
   --name NAME             Initial display name (can be refined in the company context)
-  --github-auth MODE      token (recommended), existing, or explicitly broader oauth
+  --github-auth MODE      app (recommended), token, existing, or explicitly broader oauth
+  --github-app-file FILE  Import protected schema1 App registration/connection JSON
+  --github-setup-origin URL  Browser-visible forwarded loopback/HTTPS setup origin
+  --github-setup-port PORT   Fixed devbox loopback port for forwarding
   --github-token-file FILE  Read a fine-grained token from an existing protected file
   --state-directory DIR   Local runtime/source/session storage outside Git
   --yes                   Use supplied options/defaults without terminal questions
@@ -38,7 +49,8 @@ Options:
 
 Settings: MZ_CONFIG_FILE or ~/.config/mz/config.json (XDG_CONFIG_HOME supported).
 Existing company files/settings are preserved. GitHub scope/identity guidance comes before login.
-Interactive GitHub setup recommends a fine-grained token via hidden credential input or protected-file reference;
+Interactive GitHub setup recommends an organization-owned App; your owner access remains outside its grant.
+Token mode supports hidden credential input or protected-file reference;
 no token argument, company-context prompt, or implicit browser OAuth. OAuth uses broader repo/read:org/gist scopes
 and is only an explicit choice. MZ uses a private native gh profile with owner-only, unencrypted file storage.
 Codex/ChatGPT model authentication is separate. --yes never starts an interactive login.
@@ -92,6 +104,7 @@ interface InitTerminal {
   close(): void;
 }
 export interface InitHost {
+  githubRequest?: AppRequest;
   env?: NodeJS.ProcessEnv;
   terminal?: boolean;
   question?: (label: string, fallback: string) => Promise<string>;
@@ -147,6 +160,9 @@ export async function runInitCli(
           '--state-directory',
           '--github-auth',
           '--github-token-file',
+          '--github-app-file',
+          '--github-setup-origin',
+          '--github-setup-port',
         ].includes(arg)
       )
         invalid();
@@ -164,13 +180,25 @@ export async function runInitCli(
     if (values['repository']) repository(values['repository']);
     if (
       values['github-auth'] &&
-      !['token', 'existing', 'oauth'].includes(values['github-auth'])
+      !['app', 'token', 'existing', 'oauth'].includes(values['github-auth'])
     )
       invalid();
     if (
       values['github-token-file'] &&
       values['github-auth'] &&
       values['github-auth'] !== 'token'
+    )
+      invalid();
+    if (
+      values['github-app-file'] &&
+      (values['github-token-file'] ||
+        (values['github-auth'] && values['github-auth'] !== 'app'))
+    )
+      invalid();
+    if (
+      values['github-setup-port'] &&
+      (!/^[1-9][0-9]{0,4}$/.test(values['github-setup-port']) ||
+        Number(values['github-setup-port']) > 65535)
     )
       invalid();
     if (
@@ -251,8 +279,21 @@ export async function runInitCli(
             'Existing company Git repository URL (blank creates a local shell)',
             '',
           ));
-    if (repo) {
-      repository(repo);
+    const selectedMethod = values['github-app-file']
+      ? 'app'
+      : (values['github-auth'] ??
+        (values['github-token-file']
+          ? 'token'
+          : repo && !yes
+            ? await ask(
+                'GitHub authentication method: app (recommended), token, existing, oauth',
+                'app',
+              )
+            : 'existing'));
+    if (!['app', 'token', 'existing', 'oauth'].includes(selectedMethod))
+      invalid();
+    if (repo || selectedMethod === 'app') {
+      if (repo) repository(repo);
       let entries: string[] = [];
       try {
         entries = await readdir(companyDirectory);
@@ -261,33 +302,74 @@ export async function runInitCli(
           throw e;
       }
       if (entries.length > 0) {
-        const selected = await execute(
-          'git',
-          ['-C', companyDirectory, 'remote', 'get-url', 'origin'],
-          { env, timeout: 5000, maxBuffer: 4096 },
-        );
-        if (selected.stdout.trim() !== repo) throw new Error();
+        if (repo) {
+          const selected = await execute(
+            'git',
+            ['-C', companyDirectory, 'remote', 'get-url', 'origin'],
+            { env, timeout: 5000, maxBuffer: 4096 },
+          );
+          if (selected.stdout.trim() !== repo) throw new Error();
+        }
       }
-      const access = await prepareGitHubAccess({
-        repository: repo,
-        companyDirectory,
-        env,
-        interactive: !yes && !!interactive,
-        ...(values['github-auth']
-          ? { method: values['github-auth'] as GitHubAuthMode }
-          : {}),
-        ...(values['github-token-file']
-          ? { tokenFile: values['github-token-file'] }
-          : {}),
-        question: ask,
-        notice,
-        readSecret,
-        login,
-      });
-      const gitEnv = access.profileDirectory
-        ? githubClientEnvironment(env, access.profileDirectory)
-        : await companyGitHubEnvironment(companyDirectory, env);
-      if (entries.length === 0) {
+      let gitEnv: NodeJS.ProcessEnv;
+      let profileDirectory: string | undefined;
+      if (selectedMethod === 'app') {
+        if (repo && !/^https:\/\/github\.com\//.test(repo)) throw new Error();
+        if (values['github-app-file'])
+          await importAppConnection({
+            companyDirectory,
+            env,
+            file: values['github-app-file'],
+            ...(host.githubRequest ? { request: host.githubRequest } : {}),
+          });
+        else if (yes) {
+          const saved = await loadAppConnection({
+            companyDirectory,
+            env,
+            ...(host.githubRequest ? { request: host.githubRequest } : {}),
+          });
+          if (!saved) throw new Error();
+          await saved.app.verify();
+        } else {
+          terminal?.close();
+          terminal = undefined;
+          await connectGitHubApp({
+            companyDirectory,
+            env,
+            question: ask,
+            notice,
+            ...(host.githubRequest ? { request: host.githubRequest } : {}),
+            ...(values['github-setup-origin']
+              ? { origin: values['github-setup-origin'] }
+              : {}),
+            ...(values['github-setup-port']
+              ? { port: Number(values['github-setup-port']) }
+              : {}),
+          });
+        }
+        await prepareAppClient(companyDirectory, env);
+        gitEnv = appGitEnvironment(companyDirectory, env);
+      } else {
+        const access = await prepareGitHubAccess({
+          repository: repo,
+          companyDirectory,
+          env,
+          interactive: !yes && !!interactive,
+          method: selectedMethod as GitHubAuthMode,
+          ...(values['github-token-file']
+            ? { tokenFile: values['github-token-file'] }
+            : {}),
+          question: ask,
+          notice,
+          readSecret,
+          login,
+        });
+        profileDirectory = access.profileDirectory;
+        gitEnv = profileDirectory
+          ? githubClientEnvironment(env, profileDirectory)
+          : await companyGitHubEnvironment(companyDirectory, env);
+      }
+      if (repo && entries.length === 0) {
         await mkdir(dirname(companyDirectory), {
           recursive: true,
           mode: 0o700,
@@ -301,19 +383,17 @@ export async function runInitCli(
         };
         await clone();
       } else {
-        if (access.profileDirectory)
+        if (repo && (profileDirectory || selectedMethod === 'app'))
           await execute('git', ['ls-remote', repo], {
             env: { ...gitEnv, GIT_TERMINAL_PROMPT: '0' },
             timeout: 30000,
             maxBuffer: 4096,
           });
       }
-      if (access.profileDirectory)
-        await bindGitHubProfile(
-          companyDirectory,
-          access.profileDirectory,
-          gitEnv,
-        );
+      if (profileDirectory)
+        await bindGitHubProfile(companyDirectory, profileDirectory, gitEnv);
+      if (repo && selectedMethod === 'app')
+        await bindAppGit(companyDirectory, env);
     } else if (values['github-token-file'] || values['github-auth']) {
       invalid();
     }
@@ -354,6 +434,14 @@ export async function runInitCli(
       id,
       name,
     });
+    if (selectedMethod === 'app' && !repo) {
+      await execute('git', ['init', companyDirectory], {
+        env,
+        timeout: 5000,
+        maxBuffer: 4096,
+      });
+      await bindAppGit(companyDirectory, env);
+    }
     const available = await probe(['--version'], env);
     let authenticated = available && (await probe(['login', 'status'], env));
     if (!yes && interactive && available && !authenticated) {

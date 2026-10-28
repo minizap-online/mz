@@ -18,7 +18,7 @@ For the existing MiniZap company repository, you can supply its URL directly:
 mz init --repository https://github.com/minizap-online/company.git
 ```
 
-GitHub authentication now starts with a target/permission explanation and a choice: fine-grained token (recommended), existing credentials, or explicitly broader browser OAuth. You can enter a token in a hidden credential field or supply a protected-file reference; never paste it in company conversation. MZ isolates the native GitHub CLI profile and does not export the token into the Codex/model environment. The profile uses owner-only unencrypted local storage, disclosed before entry. See [GitHub scope, identity and storage setup](github-setup.md) for the suggested Member/team and permission profile.
+GitHub authentication starts with an explanation and a choice: organization-owned App (recommended for managing projects), fine-grained token, existing credentials, or explicitly broader browser OAuth. See [App setup and project provisioning](github-app.md). You can enter a token in a hidden credential field or supply a protected-file reference; never paste it in company conversation. MZ isolates the native GitHub CLI profile and does not export the token into the Codex/model environment. The profile uses owner-only unencrypted local storage, disclosed before entry. See [GitHub scope, identity and storage setup](github-setup.md) for the suggested Member/team and permission profile.
 
 Codex/ChatGPT model sign-in is a separate labelled connection. The host needs Git, Codex and GitHub CLI for the GitHub connection. MZ does not create a member or assign organization permissions by signing in. No browser/device-code OAuth is an implicit fallback.
 

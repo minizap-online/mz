@@ -174,3 +174,17 @@ export function createGitHubProviderSkeleton(
       unavailable('work-item.create', input, action, 'repository', true),
   });
 }
+
+export { createGitHubApp, type GitHubApp, type AppRepository } from './app.js';
+export {
+  appPermissions,
+  validateAppConnection,
+  type AppConnection,
+} from './app-policy.js';
+export {
+  GitHubAppError,
+  convertAppManifest,
+  githubRequest,
+  type AppRequest,
+} from './app-api.js';
+export { discoverAppConnection } from './app.js';

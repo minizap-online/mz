@@ -1,3 +1,4 @@
+import { loadAppConnection } from './github-app-store.js';
 import { companyGitHubEnvironment } from './github-auth.js';
 import {
   createDoctorHost,
@@ -126,9 +127,32 @@ export async function runDoctorCli(
     if (options.githubAuth) {
       try {
         const company = await loadCompanyRepository(options.company ?? {});
-        host = createDoctorHost(
-          await companyGitHubEnvironment(company.root, process.env),
+        const environment = await companyGitHubEnvironment(
+          company.root,
+          process.env,
         );
+        const base = createDoctorHost(environment);
+        if (environment['MZ_GITHUB_APP_COMPANY']) {
+          const saved = await loadAppConnection({
+            companyDirectory: company.root,
+            env: process.env,
+          });
+          if (!saved) throw new Error();
+          host = {
+            nodeVersion: base.nodeVersion,
+            probeCommand: async (command, args) => {
+              if (command === 'gh' && args.includes('api')) {
+                try {
+                  await saved.app.verify();
+                  return { ok: true, stdout: '' };
+                } catch {
+                  return { ok: false, stdout: '' };
+                }
+              }
+              return base.probeCommand(command, args);
+            },
+          };
+        } else host = base;
       } catch {
         const base = createDoctorHost();
         host = {

@@ -22,7 +22,9 @@ function script(profile: string, executable: string): string {
     ' "$@"\n'
   );
 }
-async function nativeExecutable(env: NodeJS.ProcessEnv): Promise<string> {
+export async function nativeExecutable(
+  env: NodeJS.ProcessEnv,
+): Promise<string> {
   for (const directory of (env.PATH ?? '').split(delimiter)) {
     if (!isAbsolute(directory)) continue;
     const path = join(directory, 'gh');

@@ -1,8 +1,8 @@
 # GitHub credentials for MZ
 
-MZ recommends one active fine-grained GitHub token for its company connection, with explicit organization/repository selection. This is separate from Codex/ChatGPT model authentication. Signing in neither creates a GitHub user nor joins or grants membership in an organization.
+For company/project management, MZ recommends an [organization-owned GitHub App](github-app.md). This page documents the explicit personal-token alternative, with organization/repository selection. This is separate from Codex/ChatGPT model authentication. Signing in neither creates a GitHub user nor joins or grants membership in an organization.
 
-Run `mz init --repository https://github.com/OWNER/company.git`. Before authentication, MZ shows the target and access guidance, then offers **token**, **existing**, or **oauth**. Token is the recommended interactive default; browser/device-code OAuth is never an automatic recovery from a failed clone.
+Run `mz init --repository https://github.com/OWNER/company.git`. Before authentication, MZ shows the target and access guidance, then offers **token**, **existing**, or **oauth**. App is the recommended interactive default; token remains available; browser/device-code OAuth is never an automatic recovery from a failed clone.
 
 ## Identity and permission profile
 

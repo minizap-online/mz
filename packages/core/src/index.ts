@@ -161,3 +161,13 @@ export type {
 export { preparePrivateHostDirectory } from './private-host-directory.js';
 
 export { createDoctorHost } from './doctor-host.js';
+export {
+  readPrivateArtifact,
+  writePrivateArtifact,
+} from './private-artifacts.js';
+export {
+  provisionProject,
+  type ProvisioningIntent,
+  type ProvisioningOutcome,
+  type ProvisioningProvider,
+} from './provisioning.js';
