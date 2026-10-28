@@ -24,3 +24,4 @@ See [workflow](../workflow.md), [milestones](../milestones.md) and [template](..
 | [CR-003](CR-003.md)   | MIT attribution to expeter                               | [M-00](../milestones.md#m-00) | None               |
 | [CR-004](CR-004.md)   | Owner acceptance tests and delivered capabilities        | [M-04](../milestones.md#m-04) | None               |
 | [BUG-001](BUG-001.md) | Scoped GitHub authentication and permission explanation  | [M-05](../milestones.md#m-05) | None               |
+| [BUG-002](BUG-002.md) | GitHub SSH URL compatibility in App onboarding           | [M-05](../milestones.md#m-05) | None               |

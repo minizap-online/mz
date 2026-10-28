@@ -393,3 +393,177 @@ test('unsafe pending setup cannot be mistaken for absence and start a duplicate 
   );
   assert.equal(questions, 0);
 });
+test('App init accepts the normal SSH URL and reaches organization setup before any registration', async (t) => {
+  const { runInitCli } = await import('../packages/cli/dist/init.js');
+  const root = await mkdtemp(join(tmpdir(), 'mz-app-ssh-prompt-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  let organizationAsked = false;
+  const result = await runInitCli(
+    ['--repository', 'git@github.com:sample-org/company.git'],
+    {
+      terminal: true,
+      env: {
+        ...process.env,
+        MZ_CONFIG_FILE: join(root, 'config/config.json'),
+        XDG_STATE_HOME: join(root, 'state'),
+        XDG_DATA_HOME: join(root, 'data'),
+      },
+      notice: () => {},
+      question: async (label, fallback) => {
+        if (label === 'GitHub organization for this MZ connection') {
+          organizationAsked = true;
+          throw Error('synthetic stop before actual registration');
+        }
+        return fallback;
+      },
+    },
+  );
+  assert.equal(organizationAsked, true);
+  assert.equal(result.exitCode, 1);
+  assert.match(result.stderr, /GitHub App connection/i);
+});
+for (const scenario of [
+  'clone',
+  'existing',
+  'foreign-fetch',
+  'foreign-push',
+  'rewrite',
+])
+  test('App SSH transport: ' + scenario, async (t) => {
+    const existing = scenario !== 'clone';
+    const { runInitCli } = await import('../packages/cli/dist/init.js');
+    const { saveAppConnection } =
+      await import('../packages/cli/dist/github-app-store.js');
+    const { mkdir, writeFile } = await import('node:fs/promises');
+    const { promisify } = await import('node:util');
+    const { execFile } = await import('node:child_process');
+    const execute = promisify(execFile);
+    const root = await mkdtemp(join(tmpdir(), 'mz-app-ssh-checkout-'));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const company = join(root, 'data/mz/company');
+    const bin = join(root, 'bin');
+    await mkdir(bin);
+    const bare = join(root, 'empty.git');
+    await execute('/usr/bin/git', ['init', '--bare', '-q', bare]);
+    const calls = join(root, 'git-calls');
+    await writeFile(
+      join(bin, 'git'),
+      `#!${process.execPath}\nimport fs from'node:fs';import{spawnSync}from'node:child_process';const args=process.argv.slice(2);fs.appendFileSync(${JSON.stringify(calls)},JSON.stringify(args)+'\\n');if(args[0]==='clone'){const dest=args.at(-1);const r=spawnSync('/usr/bin/git',['clone','--',${JSON.stringify(bare)},dest],{stdio:'ignore'});if(r.status)process.exit(r.status);spawnSync('/usr/bin/git',['-C',dest,'remote','set-url','origin',args.at(-2)]);process.exit(0);}if(args[0]==='ls-remote'&&!args.includes('--get-url'))process.exit(0);const r=spawnSync('/usr/bin/git',args,{stdio:'inherit'});process.exit(r.status??1);`,
+      { mode: 0o700 },
+    );
+    await writeFile(
+      join(bin, 'codex'),
+      `#!${process.execPath}\nprocess.exit(0);`,
+      { mode: 0o700 },
+    );
+    const env = {
+      ...process.env,
+      PATH: bin + ':' + process.env.PATH,
+      MZ_CONFIG_FILE: join(root, 'config/config.json'),
+      XDG_STATE_HOME: join(root, 'state'),
+      XDG_DATA_HOME: join(root, 'data'),
+    };
+    if (scenario === 'rewrite') {
+      const globalFile = join(root, 'git-global');
+      await writeFile(
+        globalFile,
+        '[url "git@github.com:"]\n insteadOf = https://github.com/\n',
+        { mode: 0o600 },
+      );
+      env.GIT_CONFIG_GLOBAL = globalFile;
+    }
+    const notices = [];
+    if (existing) {
+      await mkdir(company, { recursive: true, mode: 0o700 });
+      await execute('/usr/bin/git', ['init', '-q', company]);
+      await execute('/usr/bin/git', [
+        '-C',
+        company,
+        'remote',
+        'add',
+        'origin',
+        scenario === 'foreign-fetch'
+          ? 'git@github.com:other-org/other.git'
+          : 'git@github.com:sample-org/company.git',
+      ]);
+      await execute('/usr/bin/git', [
+        '-C',
+        company,
+        'config',
+        '--add',
+        'remote.origin.pushurl',
+        scenario === 'foreign-push'
+          ? 'git@github.com:other-org/other.git'
+          : 'git@github.com:sample-org/company.git',
+      ]);
+    }
+    await saveAppConnection({
+      companyDirectory: company,
+      env,
+      connection: c,
+      privateKey: Buffer.from(key),
+      request,
+    });
+    let providerCalls = 0;
+    const result = await runInitCli(
+      ['--repository', 'git@github.com:sample-org/company.git'],
+      {
+        env,
+        terminal: true,
+        githubRequest: async (...args) => {
+          providerCalls++;
+          return request(...args);
+        },
+        notice: (text) => notices.push(text),
+        question: async (_label, fallback) => fallback,
+      },
+    );
+    if (scenario === 'rewrite') {
+      assert.equal(result.exitCode, 1);
+      assert.match(result.stderr, /HTTPS transport/);
+      assert.equal(providerCalls, 0);
+      return;
+    }
+    if (scenario.startsWith('foreign')) {
+      assert.equal(result.exitCode, 1);
+      assert.match(result.stderr, /repository selection/);
+      assert.equal(providerCalls, 0);
+      return;
+    }
+    assert.equal(result.exitCode, 0, result.stderr);
+    const commands = (await readFile(calls, 'utf8'))
+      .trim()
+      .split('\n')
+      .map(JSON.parse);
+    const operation = commands.find(
+      (args) => args[0] === (existing ? 'ls-remote' : 'clone'),
+    );
+    assert.ok(operation.includes('https://github.com/sample-org/company.git'));
+    assert.ok(!operation.some((arg) => arg.startsWith('git@')));
+    assert.equal(
+      (
+        await execute('/usr/bin/git', [
+          '-C',
+          company,
+          'remote',
+          'get-url',
+          'origin',
+        ])
+      ).stdout.trim(),
+      'https://github.com/sample-org/company.git',
+    );
+    assert.equal(
+      (
+        await execute('/usr/bin/git', [
+          '-C',
+          company,
+          'remote',
+          'get-url',
+          '--push',
+          'origin',
+        ])
+      ).stdout.trim(),
+      'https://github.com/sample-org/company.git',
+    );
+    assert.match(notices.join(''), /HTTPS/);
+  });
