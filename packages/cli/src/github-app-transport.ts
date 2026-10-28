@@ -224,6 +224,9 @@ export async function runGitHubAppCli(
         const index = line.indexOf('=');
         if (index < 1) throw new Error();
         const key = line.slice(0, index);
+        // Git advertises multi-valued capabilities/challenges/state. Legacy username/password
+        // helpers may ignore these and other unrecognised attributes; only identity routes access.
+        if (!['protocol', 'host', 'path'].includes(key)) continue;
         if (Object.hasOwn(data, key)) throw new Error();
         data[key] = line.slice(index + 1);
       }
