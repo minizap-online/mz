@@ -1,4 +1,6 @@
-import { lstat } from 'node:fs/promises';
+import { appSetupAccessInstructions } from './github-app-access.js';
+import { lstat, unlink, open } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { createServer, type ServerResponse } from 'node:http';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -84,7 +86,12 @@ export async function startAppSetup(
           url: 'https://github.com/minizap-online/mz',
           public: false,
           request_oauth_on_install: false,
-          hook_attributes: { active: false, url: base.origin + '/unused' },
+          // GitHub validates the URL even when inactive; this public placeholder receives no events.
+          hook_attributes: {
+            active: false,
+            url: 'https://github.com/minizap-online/mz',
+          },
+          default_events: [],
           redirect_url: base.origin + '/manifest',
           setup_url: base.origin + '/installed?state=' + state,
           default_permissions: appPermissions,
@@ -310,33 +317,76 @@ export async function connectGitHubApp(
     if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT'))
       throw error;
   }
+  let selection: { organization: string; owner: string } | undefined;
   if (registrationExists) {
-    await readPrivateArtifact(registrationPath, [options.companyDirectory]);
+    const record = JSON.parse(
+      (
+        await readPrivateArtifact(registrationPath, [options.companyDirectory])
+      ).toString('utf8'),
+    ) as Record<string, unknown>;
+    if (
+      record['schemaVersion'] !== 1 ||
+      typeof record['organization'] !== 'string' ||
+      typeof record['owner'] !== 'string' ||
+      !/^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/.test(record['organization']) ||
+      !/^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/.test(record['owner']) ||
+      Object.keys(record).sort().join(',') !==
+        'organization,owner,schemaVersion'
+    )
+      throw new Error('Invalid registration intent.');
     options.notice(
-      'An earlier App registration may already exist or its credential response may have been lost. Recover that registration/key in GitHub and use --github-app-file. MZ will not start a duplicate registration. If GitHub confirms no App was created, remove only this protected registration intent before starting over.\n',
+      'An earlier App registration is unfinished. If an App was created or its credential response was lost, recover that registration/key in GitHub and use --github-app-file. MZ will preserve this intent unless you confirm GitHub rejected the form before creating an App.\n',
     );
-    throw new Error('Existing registration requires recovery/import.');
+    const rejected = await options.question(
+      'Did GitHub reject the registration form before creating an App? (yes/no)',
+      'no',
+    );
+    if (!/^(yes|y)$/i.test(rejected.trim()))
+      throw new Error('Existing registration requires recovery/import.');
+    // Only discard the validated intent, never a pending key or a working connection.
+    if (await loadAppConnection(options))
+      throw new Error('An App connection is already present.');
+    try {
+      await lstat(pendingPath);
+      throw new Error('Pending App credentials require recovery.');
+    } catch (error) {
+      if (!(
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'ENOENT'
+      ))
+        throw error;
+    }
+    await unlink(registrationPath);
+    const parent = await open(
+      appDirectory(options.env),
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW,
+    );
+    try {
+      await parent.sync();
+    } finally {
+      await parent.close();
+    }
+    selection = {
+      organization: record['organization'],
+      owner: record['owner'],
+    };
   }
-  const organization = await options.question(
-    'GitHub organization for this MZ connection',
-    '',
-  );
-  const owner = await options.question(
-    'Your GitHub username (must remain organization Owner)',
-    '',
-  );
+  const organization =
+    selection?.organization ??
+    (await options.question('GitHub organization for this MZ connection', ''));
+  const owner =
+    selection?.owner ??
+    (await options.question(
+      'Your GitHub username (must remain organization Owner)',
+      '',
+    ));
   options.notice(
     'MZ GitHub App: organization-wide repository access; Contents/Issues/Pull requests/Repository creation and organization Projects write; Metadata/Members read only. No membership changes, repository Administration, user OAuth, or personal-token fallback. You retain owner control and can uninstall it in GitHub. App signing key stays in private host files; this devbox steward is a trusted host operator.\n',
   );
   const flow = await startAppSetup({ ...options, organization, owner });
   try {
-    options.notice(
-      'Open this private setup page: ' +
-        flow.url +
-        '\nIf your browser is on another machine, forward local port ' +
-        flow.localPort +
-        ' to this devbox loopback port first (for example through your devbox Ports UI). You can also use --github-app-file for a protected registration import.\n',
-    );
+    options.notice(appSetupAccessInstructions(flow, options.env));
     await flow.done;
     const saved = await loadAppConnection(options);
     if (!saved)
