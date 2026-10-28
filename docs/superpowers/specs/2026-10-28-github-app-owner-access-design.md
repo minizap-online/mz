@@ -91,4 +91,4 @@ Official sources checked 2026-10-28:
 - [Installation-token repository/permission subsets and expiry](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app).
 - [Human installation access/suspension/uninstallation](https://docs.github.com/en/apps/using-github-apps/reviewing-and-modifying-installed-github-apps).
 
-No App has been registered/installed, no credential issued, and no permission or project changed while preparing this design. The installed version remains the PAT/existing/OAuth implementation. This document specifies the intended boundary and verification, not an already-tested owner-lockout guarantee.
+No App has been registered/installed, no credential issued, and no permission or project changed while preparing this design. At design preparation the installed version supported PAT/existing/OAuth only; delivered App implementation and verification are recorded in FR-015. Actual owner registration, grants and pilot acceptance remain separate from synthetic implementation evidence.
