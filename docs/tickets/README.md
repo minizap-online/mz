@@ -28,3 +28,4 @@ See [workflow](../workflow.md), [milestones](../milestones.md) and [template](..
 | [CR-005](CR-005.md)   | SSH forwarding command in remote App setup               | [M-05](../milestones.md#m-05) | None               |
 | [BUG-003](BUG-003.md) | Valid inactive webhook URL and rejected-form retry       | [M-05](../milestones.md#m-05) | None               |
 | [BUG-004](BUG-004.md) | Git credential arrays and saved App resume               | [M-05](../milestones.md#m-05) | None               |
+| [BUG-005](BUG-005.md) | Company control and project implementation boundary      | [M-05](../milestones.md#m-05) | None               |
