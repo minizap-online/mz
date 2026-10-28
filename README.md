@@ -4,9 +4,13 @@ MZ is a small MIT-licensed organization toolbox for humans and coding agents. It
 
 ## Current state
 
-The CLI implements help, version, [environment doctor](docs/doctor.md), [private Markdown intake](docs/intake.md), [inbox inspection/triage](docs/inbox.md), [bounded context compilation](docs/context.md), and [status/advisory steward](docs/steward.md). Core provides a read-only [company repository loader](docs/company-repository.md) and [SQLite runtime state](docs/runtime-state.md) with migrations and atomic audit history. Core also provides [secret references and scoped host-file secret handling](docs/secrets.md). Core also provides the [backup hook and verified fixture restore contract](docs/backups.md). The [thin MZ worker skill](packages/skill/SKILL.md) teaches these interfaces; [verification and recording prerequisites](docs/worker-skill.md) are explicit. Live GitHub work/source integration remains future work in the [milestones](docs/milestones.md). Core defines [neutral provider contracts](docs/providers.md); the GitHub package implements an audited offline skeleton. Context compilation remains offline. The configured advisory steward performs a bounded tool-free OpenAI request; live model use needs separately provisioned host configuration and authorization. The [real pilot](docs/pilot-handoff.md) is the next human boundary.
+The CLI implements help, version, [environment doctor](docs/doctor.md), [private Markdown intake](docs/intake.md), [inbox inspection/triage](docs/inbox.md), [bounded context compilation](docs/context.md), and [status/advisory steward](docs/steward.md). Core provides a read-only [company repository loader](docs/company-repository.md) and [SQLite runtime state](docs/runtime-state.md) with migrations and atomic audit history. Core also provides [secret references and scoped host-file secret handling](docs/secrets.md). Core also provides the [backup hook and verified fixture restore contract](docs/backups.md). The [thin MZ worker skill](packages/skill/SKILL.md) teaches these interfaces; [verification and recording prerequisites](docs/worker-skill.md) are explicit. Live GitHub work/source integration remains future work in the [milestones](docs/milestones.md). Core defines [neutral provider contracts](docs/providers.md); the GitHub package implements an audited offline skeleton. Context compilation remains offline. Owner-facing guide/ask conversations use Codex with saved installation settings. The explicit structured advisory form performs a bounded tool-free OpenAI request; live model use needs separately provisioned host configuration and authorization. The [real pilot](docs/pilot-handoff.md) is the next human boundary.
 
-Run the [owner test plan](docs/test-plan.md) for an isolated offline walkthrough, expected results, and optional live acceptance checks.
+Use [getting started](docs/getting-started.md) for normal onboarding. The [test plan](docs/test-plan.md) is a maintainer fixture/regression walkthrough with expected results and optional live acceptance checks.
+
+## First use
+
+After the devbox installation, run `mz init`, then `mz guide`, then `mz ask`. Init prepares a company shell and remembers local settings; guide and ask use your existing Codex login for owner conversations. No company context questions need to be answered in the development chat. See the [short getting-started guide](docs/getting-started.md).
 
 ## Local development
 
@@ -15,6 +19,7 @@ Requires Node.js 24+ and npm 11+.
 ```sh
 npm ci
 npm run build
+npm run install:local
 npm run mz -- --help
 npm run mz -- --version
 ```

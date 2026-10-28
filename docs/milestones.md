@@ -58,7 +58,7 @@ Tickets: [FR-012](tickets/FR-012.md)
 
 Exit criteria: A real idea passes intake, triage, human activation, initial knowledge and independent assurance into development. Manual steps are allowed.
 
-Tickets: Create scoped BUG/FR/CR tickets when this milestone becomes actionable; no speculative implementation tickets yet.
+Tickets: [FR-014 guided devbox installation and company onboarding](tickets/FR-014.md) addresses the owner's concrete pilot setup friction. Actual pilot company/project context is collected through MZ, not inferred from development fixtures.
 
 <a id="m-06"></a>
 

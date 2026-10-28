@@ -23,7 +23,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run build && npm run lint && npm run format:check && npm test",
-    "mz": "node packages/cli/dist/main.js"
+    "mz": "node packages/cli/dist/main.js",
+    "install:local": "npm run build && node scripts/install-local.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -17,6 +17,7 @@ See [workflow](../workflow.md), [milestones](../milestones.md) and [template](..
 | [FR-011](FR-011.md) | MZ skill                                          | [M-03](../milestones.md#m-03) | MZ-011             |
 | [FR-012](FR-012.md) | Project steward                                   | [M-04](../milestones.md#m-04) | MZ-012             |
 | [FR-013](FR-013.md) | GitHub organization bootstrap                     | [M-00](../milestones.md#m-00) | None               |
+| [FR-014](FR-014.md) | Guided devbox installation and company onboarding | [M-05](../milestones.md#m-05) | None               |
 | [CR-001](CR-001.md) | Ticket workflow and organization target           | [M-00](../milestones.md#m-00) | None               |
 | [CR-002](CR-002.md) | GitHub work authority and runtime boundary        | [M-00](../milestones.md#m-00) | None               |
 | [CR-003](CR-003.md) | MIT attribution to expeter                        | [M-00](../milestones.md#m-00) | None               |

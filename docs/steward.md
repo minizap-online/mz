@@ -1,5 +1,7 @@
 # Project steward
 
+For the owner-facing installed workflow, use [mz init → mz guide → mz ask](getting-started.md). The structured API contract below remains available through explicit FILE/role/task options and `mz ask --api-help`. Interactive Codex conversations are trusted host sessions with company-knowledge continuity and plain run auditing; they do not claim the tool-free worker isolation or validated response/handover described below.
+
 FR-012 adds read-only status and an advisory steward. Git owns curated knowledge, GitHub owns actionable work/planning, and Core owns structural runtime history. No proposal automatically changes triage, issues, knowledge, authority or activation.
 
 ## Status
