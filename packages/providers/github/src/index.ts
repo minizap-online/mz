@@ -187,3 +187,4 @@ export {
   githubRequest,
   type AppRequest,
 } from './app-api.js';
+export { discoverAppConnection } from './app.js';

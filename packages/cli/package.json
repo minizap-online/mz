@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mz/core": "0.1.0",
-    "@mz/context": "0.1.0"
+    "@mz/context": "0.1.0",
+    "@mz/github": "0.1.0"
   }
 }

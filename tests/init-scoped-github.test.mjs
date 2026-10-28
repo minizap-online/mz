@@ -48,7 +48,7 @@ test('init selects a scoped token before cloning and reuses only a profile refer
       notice: (text) => notices.push(text),
       question: async (label, fallback) => {
         prompts.push(label);
-        return fallback;
+        return /GitHub authentication method/.test(label) ? 'token' : fallback;
       },
       readSecret: async () => {
         assert.match(notices.join('\n'), /Only select repositories/);

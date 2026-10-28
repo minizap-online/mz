@@ -32,9 +32,9 @@ Files: `packages/providers/github/src/app.ts`, `app-api.ts`, `app-policy.ts`; ex
 
 Interfaces: `GitHubApp` with `verify()`, `withRepositoryToken(repository, use)` and narrowly scoped `createRepository(name, visibility)`; internal request transport receives method/path/body/auth with bounded source-safe errors. Connection `{schemaVersion:1,appId,installationId,organizationId,organization,ownerId,owner}`. No token-returning CLI API.
 
-- [ ] RED: synthetic transport verifies rejected Members-write/Admin/unknown grants, wrong org/owner/app, expired or widened tokens, absent/foreign repo IDs; decode/verify signed JWT using a generated RSA fixture. Assert no POST after validation failure.
-- [ ] Implement exact permission map (`metadata:read,contents:write,issues:write,pull_requests:write,repository_creation:write,organization_projects:write,members:read`), all-repositories private org-owned App validation and explicit token subsets/expiry.
-- [ ] GREEN: `npm run build && node --test tests/github-app.test.mjs`; commit provider behavior.
+- [x] RED: synthetic transport verifies rejected Members-write/Admin/unknown grants, wrong org/owner/app, expired or widened tokens, absent/foreign repo IDs; decode/verify signed JWT using a generated RSA fixture. Assert no POST after validation failure.
+- [x] Implement exact permission map (`metadata:read,contents:write,issues:write,pull_requests:write,repository_creation:write,organization_projects:write,members:read`), all-repositories private org-owned App validation and explicit token subsets/expiry.
+- [x] GREEN: `npm run build && node --test tests/github-app.test.mjs`; commit provider behavior.
 
 ### Task 2: Protected connection setup and native transport
 
@@ -42,9 +42,9 @@ Files: Core `private-artifacts.ts`, CLI `github-app-store.ts`, `github-app-setup
 
 Interfaces: private exclusive write/read/atomic replacement helpers; `connectGitHubApp({companyDirectory,env,question,notice,importFile?,setupOrigin?})`; native `mz github credential` / `mz github status` with no secret JSON output.
 
-- [ ] RED: manifest state/Host validation and consumed callback, private file import/path constraints, atomic new connection preservation, App-bound Git helper synthetic fill/failure without ambient fallback, init recommendation/existing-binding reuse and installed helper path.
-- [ ] Implement localhost server with random state and manifest form, timeouts/cleanup; remote devbox uses forwarded loopback or configured HTTP loopback/HTTPS origin. Import is a protected schema1 JSON `{appId,installationId,organization,owner,privateKey}` alternative; keys only reach native protected files. Browser callback converts manifest and waits for installation/owner verification; no user OAuth. Default interactive method App; explicit token/existing/oauth compatible. App-aware doctor probes App identity.
-- [ ] GREEN: targeted tests, full suite; commit connection and transport.
+- [x] RED: manifest state/Host validation and consumed callback, private file import/path constraints, atomic new connection preservation, App-bound Git helper synthetic fill/failure without ambient fallback, init recommendation/existing-binding reuse and installed helper path.
+- [x] Implement localhost server with random state and manifest form, timeouts/cleanup; remote devbox uses forwarded loopback or configured HTTP loopback/HTTPS origin. Import is a protected schema1 JSON `{appId,installationId,organization,owner,privateKey}` alternative; keys only reach native protected files. Browser callback converts manifest and waits for installation/owner verification; no user OAuth. Default interactive method App; explicit token/existing/oauth compatible. App-aware doctor probes App identity.
+- [x] GREEN: targeted tests, full suite; commit connection and transport.
 
 ### Task 3: Audited pilot project creation/attach
 
@@ -52,9 +52,9 @@ Files: Core `provisioning.ts`, CLI `project.ts`, steward assignment instructions
 
 Interfaces: `openProvisioningJournal` stores immutable schema1 intent/outcome per stable action ID through Core. `mz project create|attach NAME --approved [--public] [--action UUID]` uses saved owner installation; no user credential/API escape hatch. Default private, public requires explicit flag.
 
-- [ ] RED: missing approval, unsafe name, audit unavailable, remote-name conflict, repeated action, foreign response, unknown create outcome and explicit attach recovery. Verify no remote write on denied requests and no duplicate POST after uncertain success.
-- [ ] Implement preflight, durable intent, create/attach, durable outcome and company project reference scaffold without replacing existing knowledge; saved action can complete curated publication after interrupted local writes. Register actor/run provider identities and pending reconciliation; never auto-delete rollback. Steward discovers command help and invokes only within owner authorization.
-- [ ] GREEN: targeted tests then full check/typecheck; commit project workflow and human guide.
+- [x] RED: missing approval, unsafe name, audit unavailable, remote-name conflict, repeated action, foreign response, unknown create outcome and explicit attach recovery. Verify no remote write on denied requests and no duplicate POST after uncertain success.
+- [x] Implement preflight, durable intent, create/attach, durable outcome and company project reference scaffold without replacing existing knowledge; saved action can complete curated publication after interrupted local writes. Register actor/run provider identities and pending reconciliation; never auto-delete rollback. Steward discovers command help and invokes only within owner authorization.
+- [x] GREEN: targeted tests then full check/typecheck; commit project workflow and human guide.
 
 ### Task 4: Review and delivery
 
@@ -65,3 +65,11 @@ Interfaces: `openProvisioningJournal` stores immutable schema1 intent/outcome pe
 ## Execution ledger
 
 Owner explicitly requested merge and implementation; proceed inline without another approval round. Design PR35 merged c723c18 after exact-head push/PR CI. Worktree `.worktrees/fr015` is ignored through local Git exclude; no credentials copied. Baseline passed 434/434. Task1 RED observed missing provider export; GREEN 15/15 new provider cases and full suite 449/449. Exact token subsets, JWT signatures, rejected grants/identity/expiry verified with generated fixture keys.
+
+Task2/3: protected artifacts, browser state/Host checks and pending-resume safety, manifest conversion/import/reuse, App Git binding/native launcher and Core provisioning all have observed RED/GREEN tests. Real Git credential fill passed using a synthetic fetch preload (no network). CLI synthetic website create/resume passed with exactly one POST, explicit approval, durable Core journal and preserved knowledge. Full pre-review check passes 463 tests/build/lint/format; typecheck follows. No live App/token/project actions or model calls.
+
+Ruling: GitHub's documented GET /app response has no public/private visibility field (confirmed against GitHub's published OpenAPI), so request public:false in the manifest and require human visibility review on protected imports rather than reject every real response for a nonexistent field. Cost if wrong: an imported App could be publicly installable, though MZ still pins organization/installation/owner IDs and excluded grants. Response-shape regression observed RED/GREEN.
+
+Ruling: preserve the existing trusted-host owner-session boundary for this pilot; no claim of untrusted worker isolation until a separate signing principal/broker is deployed. Cost if wrong: same-user malicious code could read the host key; GitHub's excluded membership/administration authority remains the direct owner-access boundary.
+
+Ruling: Core uses new version1 immutable host-file provisioning journals, avoiding an unrelated SQLite migration while storing no planning authority/content/secret values there. Cost if wrong: runtime backups must separately include these host artifacts; documentation states their location and partial-success recovery.

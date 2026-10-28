@@ -1,3 +1,5 @@
+import { runProjectCli } from './project.js';
+import { runGitHubAppCli } from './github-app-transport.js';
 import { runOwnerConversation, isOwnerAsk } from './conversation.js';
 import { runInitCli } from './init.js';
 import { withInstallationDefaults } from './installation-defaults.js';
@@ -18,6 +20,8 @@ Usage: mz [--help | --version]
        mz init [options]
        mz guide [options]
        mz ask [--project ID] [QUESTION...]
+       mz project create|attach NAME --approved
+       mz github status
        mz doctor [options]
        mz ingest FILE [options]
        mz inbox [list | inspect | history | triage] [options]
@@ -46,6 +50,8 @@ export async function runCli(
 ): Promise<CliResult> {
   if (args.length === 2 && args[0] === 'ask' && args[1] === '--api-help')
     return runStewardCli('ask', ['--help']);
+  if (args[0] === 'project') return runProjectCli(args.slice(1));
+  if (args[0] === 'github') return runGitHubAppCli(args.slice(1));
   if (args[0] === 'init') return runInitCli(args.slice(1));
   if (args[0] === 'guide') return runOwnerConversation('guide', args.slice(1));
   if (args[0] === 'ask' && isOwnerAsk(args.slice(1)))

@@ -54,3 +54,5 @@ See [architecture](docs/architecture.md), [contributing](CONTRIBUTING.md), and [
 ## License and attribution
 
 Copyright (c) 2026 [expeter](https://github.com/expeter). Licensed under the [MIT License](LICENSE), which requires retaining the copyright and permission notices in copies or substantial portions of the software.
+
+Organization-owned [GitHub App setup and project provisioning](docs/github-app.md) keeps the human owner in control while MZ manages bounded project credentials.

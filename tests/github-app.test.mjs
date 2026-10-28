@@ -31,7 +31,6 @@ function fixture(overrides = {}) {
         id: 7,
         slug: 'sample-app',
         owner: { id: 9, type: 'Organization' },
-        public: false,
         permissions,
         ...overrides.app,
       };
@@ -187,4 +186,20 @@ test('unsafe names and malformed connection IDs fail before any request', async 
       privateKey: async () => Buffer.from(pem),
     }),
   );
+});
+test('unauthenticated discovery and manifest exchange omit Authorization rather than sending an empty bearer', async (t) => {
+  const original = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = original;
+  });
+  const headers = [];
+  globalThis.fetch = async (url, options) => {
+    headers.push(options.headers);
+    return new Response('{}', {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  await github.githubRequest('GET', '/orgs/sample-org', undefined, '');
+  assert.equal(headers[0].Authorization, undefined);
 });

@@ -30,7 +30,7 @@ export const githubRequest: AppRequest = async (
       redirect: 'error',
       signal: AbortSignal.timeout(20000),
       headers: {
-        Authorization: 'Bearer ' + authorization,
+        ...(authorization ? { Authorization: 'Bearer ' + authorization } : {}),
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
         'User-Agent': 'mz-github-app',

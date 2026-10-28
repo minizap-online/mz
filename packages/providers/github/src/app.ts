@@ -77,7 +77,9 @@ export function createGitHubApp(options: {
       typeof result['token'] !== 'string' ||
       result['token'].length < 1 ||
       result['token'].length > 16384 ||
-      /[\s\x00-\x1f]/.test(result['token'])
+      Array.from(result['token']).some(
+        (c) => c.charCodeAt(0) <= 32 || c.charCodeAt(0) === 127,
+      )
     )
       throw new GitHubAppError();
     return result['token'];
@@ -88,7 +90,6 @@ export function createGitHubApp(options: {
     const owner = object(app['owner']);
     if (
       app['id'] !== c.appId ||
-      app['public'] !== false ||
       owner['id'] !== c.organizationId ||
       owner['type'] !== 'Organization'
     )
@@ -200,3 +201,37 @@ export function createGitHubApp(options: {
   });
 }
 export type GitHubApp = ReturnType<typeof createGitHubApp>;
+export async function discoverAppConnection(options: {
+  appId: number;
+  organization: string;
+  owner: string;
+  privateKey: () => Promise<Buffer>;
+  request?: AppRequest;
+}): Promise<AppConnection> {
+  const request = options.request ?? githubRequest;
+  const organization = githubName(options.organization),
+    owner = githubName(options.owner);
+  const org = object(
+    await request('GET', '/orgs/' + organization, undefined, ''),
+  );
+  const user = object(await request('GET', '/users/' + owner, undefined, ''));
+  const installation = object(
+    await request(
+      'GET',
+      '/orgs/' + organization + '/installation',
+      undefined,
+      await appJwt(options.appId, options.privateKey),
+    ),
+  );
+  const connection: AppConnection = {
+    schemaVersion: 1,
+    appId: numericId(options.appId),
+    installationId: numericId(installation['id']),
+    organizationId: numericId(org['id']),
+    organization,
+    ownerId: numericId(user['id']),
+    owner,
+  };
+  await createGitHubApp({ ...options, connection }).verify();
+  return connection;
+}

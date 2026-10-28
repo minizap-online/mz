@@ -29,3 +29,5 @@ The skeleton awaits a started acknowledgement before attempting terminal failure
 ## Verification and limits
 
 Synthetic tests cover all three operation contracts, scoped references, input/getter rejection, no content/URLs in audits, audit ordering and sink errors. TypeScript fixtures verify that neutral DTOs compile, vendor result objects are incompatible, and failed audits require a safe error code. Clean-install coverage imports the provider package from an unrelated directory. No real GitHub API, credentials, capability enforcement, remote idempotency, synchronization, deployment provider or production audit sink was exercised.
+
+FR-015 adds a separate live App client and neutral Core provisioning contract for the pilot; see [App permissions, credential transport and project recovery](github-app.md). This does not turn the original generic work-provider skeleton into a complete live integration.
