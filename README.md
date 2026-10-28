@@ -6,6 +6,8 @@ MZ is a small MIT-licensed organization toolbox for humans and coding agents. It
 
 The CLI implements help, version, [environment doctor](docs/doctor.md), [private Markdown intake](docs/intake.md), [inbox inspection/triage](docs/inbox.md), [bounded context compilation](docs/context.md), and [status/advisory steward](docs/steward.md). Core provides a read-only [company repository loader](docs/company-repository.md) and [SQLite runtime state](docs/runtime-state.md) with migrations and atomic audit history. Core also provides [secret references and scoped host-file secret handling](docs/secrets.md). Core also provides the [backup hook and verified fixture restore contract](docs/backups.md). The [thin MZ worker skill](packages/skill/SKILL.md) teaches these interfaces; [verification and recording prerequisites](docs/worker-skill.md) are explicit. Live GitHub work/source integration remains future work in the [milestones](docs/milestones.md). Core defines [neutral provider contracts](docs/providers.md); the GitHub package implements an audited offline skeleton. Context compilation remains offline. The configured advisory steward performs a bounded tool-free OpenAI request; live model use needs separately provisioned host configuration and authorization. The [real pilot](docs/pilot-handoff.md) is the next human boundary.
 
+Run the [owner test plan](docs/test-plan.md) for an isolated offline walkthrough, expected results, and optional live acceptance checks.
+
 ## Local development
 
 Requires Node.js 24+ and npm 11+.
@@ -34,8 +36,10 @@ Unsupported commands or additional arguments exit with status 2. Diagnostics nev
 
 - `packages/core`: company loading and the typed runtime-state boundary.
 - `packages/cli`: command parsing and executable entry point.
-- `packages/state`: SQLite adapter and bundled migrations; `packages/context` and `packages/providers/github`: future implementation boundaries.
-- `packages/skill`: future thin worker skill.
+- `packages/state`: SQLite adapter and bundled migrations.
+- `packages/context`: context compiler, status and advisory steward orchestration.
+- `packages/providers/github`: audited offline provider skeleton.
+- `packages/skill`: thin worker skill and command/authority guidance.
 - `templates/company`: generic manual scaffolding for a separate private company repository.
 - `schemas`: versioned company configuration and migration instructions; `examples`: future runnable examples.
 - `tests/*.test.mjs`: deterministic subprocess tests against built JavaScript.
