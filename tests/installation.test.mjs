@@ -165,3 +165,68 @@ test('settings cannot be placed inside curated company knowledge', async (t) => 
     readFile(join(f.options.companyDirectory, 'company.yaml')),
   );
 });
+test('settings consumption rejects changed company links and storage inside curated knowledge', async (t) => {
+  const f = await fixture(t);
+  const config = await core.initializeLocalInstallation(f.options);
+  await writeFile(
+    f.configFile,
+    JSON.stringify({ ...config, artifactDirectory: config.companyDirectory }),
+  );
+  await assert.rejects(
+    core.readLocalInstallation({ configFile: f.configFile }),
+  );
+  await writeFile(f.configFile, JSON.stringify(config));
+  const { rename } = await import('node:fs/promises');
+  const moved = join(f.root, 'moved');
+  await rename(config.companyDirectory, moved);
+  await symlink(moved, config.companyDirectory);
+  await assert.rejects(
+    core.readLocalInstallation({ configFile: f.configFile }),
+  );
+  await assert.rejects(core.initializeLocalInstallation(f.options));
+});
+test('init recovers only a verified private publication alias and rejects conflicting organization selection', async (t) => {
+  const f = await fixture(t);
+  await core.initializeLocalInstallation(f.options);
+  const { link } = await import('node:fs/promises');
+  const alias = join(
+    f.root,
+    'settings/.config-11111111-1111-4111-8111-111111111111.json',
+  );
+  await link(f.configFile, alias);
+  const resumed = await core.initializeLocalInstallation(f.options);
+  assert.equal(resumed.backend, 'codex');
+  assert.equal((await stat(f.configFile)).nlink, 1);
+  await assert.rejects(readFile(alias));
+  await assert.rejects(
+    core.initializeLocalInstallation({ ...f.options, id: 'other-company' }),
+  );
+  const outside = join(f.root, 'unrelated-hardlink.json');
+  await link(f.configFile, outside);
+  await assert.rejects(
+    core.readLocalInstallation({ configFile: f.configFile }),
+  );
+  assert.equal((await stat(outside)).nlink, 2);
+});
+test('existing init rejects an explicitly different organization id', async (t) => {
+  const f = await fixture(t);
+  await core.initializeLocalInstallation(f.options);
+  await assert.rejects(
+    core.initializeLocalInstallation({ ...f.options, id: 'other-company' }),
+  );
+});
+test('local runtime binding prevents a different company adopting existing history after settings loss', async (t) => {
+  const f = await fixture(t);
+  const settings = await core.initializeLocalInstallation(f.options);
+  await rm(f.configFile);
+  await assert.rejects(
+    core.initializeLocalInstallation({
+      ...f.options,
+      companyDirectory: join(f.root, 'other-company'),
+      id: 'another-company',
+    }),
+  );
+  const recovered = await core.initializeLocalInstallation(f.options);
+  assert.equal(recovered.actorId, settings.actorId);
+  assert.equal(recovered.workerId, settings.workerId);
+});

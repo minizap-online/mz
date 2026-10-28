@@ -8,9 +8,17 @@ import {
   realpath,
   link,
   unlink,
+  opendir,
 } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { dirname, isAbsolute, join, resolve, relative } from 'node:path';
+import {
+  dirname,
+  isAbsolute,
+  join,
+  resolve,
+  relative,
+  basename,
+} from 'node:path';
 import { loadCompanyRepository } from './company/repository.js';
 import { privateHostDirectory } from './private-host-directory.js';
 import { openRuntimeState } from './runtime.js';
@@ -130,50 +138,197 @@ function validate(value: unknown): LocalInstallation {
     workerId: stewardUuid(record['workerId']),
   };
 }
+interface LocalBinding {
+  schemaVersion: 1;
+  companyDirectory: string;
+  companyId: string;
+  actorId: string;
+  workerId: string;
+}
+function outside(root: string, path: string): boolean {
+  const selected = relative(root, path);
+  return (
+    selected === '..' || selected.startsWith('../') || isAbsolute(selected)
+  );
+}
+async function publicationAlias(
+  path: string,
+  stat: Stats,
+): Promise<string | null> {
+  if (stat.nlink !== 2) return null;
+  const prefix = '.' + basename(path, '.json') + '-';
+  const directory = await opendir(dirname(path));
+  let count = 0;
+  for await (const entry of directory) {
+    if (++count > 128) throw new InstallationError();
+    if (!entry.name.startsWith(prefix) || !entry.name.endsWith('.json'))
+      continue;
+    try {
+      stewardUuid(entry.name.slice(prefix.length, -5));
+    } catch {
+      continue;
+    }
+    const candidate = join(dirname(path), entry.name);
+    const other = await lstat(candidate);
+    if (
+      other.isFile() &&
+      other.nlink === 2 &&
+      other.ino === stat.ino &&
+      other.dev === stat.dev &&
+      other.uid === stat.uid &&
+      (other.mode & 0o077) === 0
+    )
+      return candidate;
+  }
+  return null;
+}
+async function privateJson(path: string): Promise<unknown> {
+  if ((await privateHostDirectory(dirname(path))) !== dirname(path))
+    throw new InstallationError();
+  const file = await open(
+    path,
+    constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+  );
+  try {
+    const stat = await file.stat();
+    if (
+      !stat.isFile() ||
+      (stat.mode & 0o077) !== 0 ||
+      (stat.uid !== 0 && stat.uid !== process.geteuid?.()) ||
+      stat.size > 8192 ||
+      (stat.nlink !== 1 && !(await publicationAlias(path, stat)))
+    )
+      throw new InstallationError();
+    const bytes = Buffer.alloc(8193);
+    let size = 0;
+    while (size < bytes.length) {
+      const { bytesRead } = await file.read(
+        bytes,
+        size,
+        bytes.length - size,
+        size,
+      );
+      if (!bytesRead) break;
+      size += bytesRead;
+    }
+    if (size > 8192) throw new InstallationError();
+    return JSON.parse(
+      new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, size)),
+    );
+  } finally {
+    await file.close();
+  }
+}
+async function recoverPublication(path: string): Promise<void> {
+  const stat = await lstat(path);
+  if (stat.nlink === 1) return;
+  const alias = await publicationAlias(path, stat);
+  if (!alias) throw new InstallationError();
+  await unlink(alias);
+  await stewardSync(dirname(path));
+}
+async function removePublishedTemporary(path: string): Promise<void> {
+  try {
+    await unlink(path);
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT'))
+      throw error;
+  }
+}
+async function publish(path: string, value: unknown): Promise<void> {
+  const temporary = join(
+    dirname(path),
+    '.' + basename(path, '.json') + '-' + randomUUID() + '.json',
+  );
+  let created = false;
+  try {
+    await stewardWrite(temporary, JSON.stringify(value, null, 2) + '\n');
+    created = true;
+    await link(temporary, path);
+    await stewardSync(dirname(path));
+  } finally {
+    if (created) await removePublishedTemporary(temporary);
+  }
+}
+async function readBinding(stateRoot: string): Promise<LocalBinding> {
+  const value = await privateJson(join(stateRoot, 'installation.json'));
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    throw new InstallationError();
+  const data = value as Record<string, unknown>;
+  const keys = [
+    'schemaVersion',
+    'companyDirectory',
+    'companyId',
+    'actorId',
+    'workerId',
+  ];
+  if (
+    Object.keys(data).length !== keys.length ||
+    Object.keys(data).some((key) => !keys.includes(key)) ||
+    data['schemaVersion'] !== 1 ||
+    typeof data['companyId'] !== 'string' ||
+    !/^[a-z][a-z0-9-]{0,63}$/.test(data['companyId'])
+  )
+    throw new InstallationError();
+  return {
+    schemaVersion: 1,
+    companyDirectory: absolute(data['companyDirectory']),
+    companyId: data['companyId'],
+    actorId: stewardUuid(data['actorId']),
+    workerId: stewardUuid(data['workerId']),
+  };
+}
+async function checkBindings(
+  settings: LocalInstallation,
+  configFile: string,
+): Promise<void> {
+  const root = dirname(settings.runtimePath);
+  if (
+    !outside(settings.companyDirectory, configFile) ||
+    !outside(settings.companyDirectory, root) ||
+    basename(settings.runtimePath) !== 'runtime.sqlite3' ||
+    settings.sourceDirectory !== join(root, 'sources') ||
+    settings.artifactDirectory !== join(root, 'sessions')
+  )
+    throw new InstallationError();
+  for (const path of [
+    settings.companyDirectory,
+    root,
+    settings.sourceDirectory,
+    settings.artifactDirectory,
+  ]) {
+    if ((await privateHostDirectory(path)) !== path)
+      throw new InstallationError();
+  }
+  for (const path of [
+    root,
+    settings.sourceDirectory,
+    settings.artifactDirectory,
+    dirname(configFile),
+  ])
+    await outsideGit(path);
+  const binding = await readBinding(root);
+  const company = await loadCompanyRepository({
+    directory: settings.companyDirectory,
+    env: {},
+  });
+  if (
+    binding.companyDirectory !== settings.companyDirectory ||
+    binding.companyId !== company.config.id ||
+    binding.actorId !== settings.actorId ||
+    binding.workerId !== settings.workerId
+  )
+    throw new InstallationError();
+}
 export async function readLocalInstallation(
   options: { configFile?: string } = {},
 ): Promise<LocalInstallation | null> {
   try {
     const path = absolute(options.configFile ?? installationPaths().configFile);
     if (!(await info(path))) return null;
-    await privateHostDirectory(dirname(path));
-    const file = await open(
-      path,
-      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-    );
-    try {
-      const stat = await file.stat();
-      if (
-        !stat.isFile() ||
-        stat.nlink !== 1 ||
-        (stat.mode & 0o077) !== 0 ||
-        (stat.uid !== 0 && stat.uid !== process.geteuid?.()) ||
-        stat.size > 8192
-      )
-        throw new InstallationError();
-      const bytes = Buffer.alloc(8193);
-      let size = 0;
-      while (size < bytes.length) {
-        const { bytesRead } = await file.read(
-          bytes,
-          size,
-          bytes.length - size,
-          size,
-        );
-        if (!bytesRead) break;
-        size += bytesRead;
-      }
-      if (size > 8192) throw new InstallationError();
-      return validate(
-        JSON.parse(
-          new TextDecoder('utf-8', { fatal: true }).decode(
-            bytes.subarray(0, size),
-          ),
-        ),
-      );
-    } finally {
-      await file.close();
-    }
+    const settings = validate(await privateJson(path));
+    await checkBindings(settings, path);
+    return settings;
   } catch {
     throw new InstallationError();
   }
@@ -243,7 +398,10 @@ export async function initializeLocalInstallation(
         dirname(existing.runtimePath) !== stateRoot
       )
         throw new InstallationError();
-      await loadCompanyRepository({ directory: selected });
+      const company = await loadCompanyRepository({ directory: selected });
+      if (company.config.id !== options.id) throw new InstallationError();
+      await recoverPublication(configFile);
+      await recoverPublication(join(stateRoot, 'installation.json'));
       await outsideGit(stateRoot);
       for (const path of [
         stateRoot,
@@ -303,6 +461,24 @@ export async function initializeLocalInstallation(
       join(stateRoot, 'sessions'),
     );
     const runtimePath = join(stateRoot, 'runtime.sqlite3');
+    const bindingPath = join(stateRoot, 'installation.json');
+    if (!(await info(bindingPath))) {
+      if (await info(runtimePath)) throw new InstallationError();
+      await publish(bindingPath, {
+        schemaVersion: 1,
+        companyDirectory: selected,
+        companyId: company.config.id,
+        actorId: randomUUID(),
+        workerId: randomUUID(),
+      });
+    }
+    const binding = await readBinding(stateRoot);
+    if (
+      binding.companyDirectory !== selected ||
+      binding.companyId !== company.config.id
+    )
+      throw new InstallationError();
+    await recoverPublication(bindingPath);
     const state = openRuntimeState({ path: runtimePath });
     state.close();
     await privateDirectory(dirname(configFile));
@@ -313,20 +489,10 @@ export async function initializeLocalInstallation(
       runtimePath,
       sourceDirectory,
       artifactDirectory,
-      actorId: randomUUID(),
-      workerId: randomUUID(),
+      actorId: binding.actorId,
+      workerId: binding.workerId,
     };
-    const temporary = join(
-      dirname(configFile),
-      '.config-' + randomUUID() + '.json',
-    );
-    try {
-      await stewardWrite(temporary, JSON.stringify(result, null, 2) + '\n');
-      await link(temporary, configFile);
-      await stewardSync(dirname(configFile));
-    } finally {
-      await unlink(temporary);
-    }
+    await publish(configFile, result);
     return result;
   } catch {
     throw new InstallationError();

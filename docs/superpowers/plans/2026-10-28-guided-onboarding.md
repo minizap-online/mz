@@ -23,7 +23,7 @@
 1. [x] Failing Core/settings/init tests; implement private validated config and no-overwrite shell/runtime creation; compile both company setup/steward tasks.
 2. [x] Failing CLI/defaults/wizard tests; implement init, safe Git attach/clone, Codex check and stored configuration precedence with no help side effects.
 3. [x] Failing interactive launch/guide/ask tests with synthetic Codex; implement bounded assignment files, inherited terminal sessions and honest run outcomes; preserve structured API form.
-4. [ ] Installer and first-use documentation, saved-default intake simplification, test-plan/skill interface accuracy, full checks and independent review.
+4. [x] Installer and first-use documentation, saved-default intake simplification, test-plan/skill interface accuracy, full checks and independent review.
 5. [ ] PR/CI/merge/install smoke from outside checkout, ticket/Project evidence; hand over three commands without running real onboarding for the owner.
 
 ## Review focus
@@ -44,3 +44,12 @@
 - Shell wizard PTY smoke is running against an isolated synthetic company with a fake already-authenticated Codex; no real onboarding answers are populated.
 
 - Real PTY wizard/default traversal plus guide --print completed in an isolated synthetic workspace; no real company context was collected. Additional config-within-company regression observed RED/GREEN. Full check now419/419, typecheck passed; local docs links/skill validator passed. Preparing the one independent final review.
+
+- Final review: fr014_review identified two Important issues (read-time path boundaries and SSH/HTTPS authentication mismatch) and two reported Minor issues (publication-alias recovery and ignored conflicting organization ID). Re-graded both latter issues Important for a new owner: interruption otherwise prevents resumption, and an explicit organization selection must not misleadingly report success for another identity.
+- Final: fixed all four findings with observed RED/GREEN regressions in installation/init-auth tests: changed roots/artifact placement rejected at consumption; native GitHub SSH login uses SSH; verified private publication aliases recover without admitting arbitrary hard links; explicit conflicting IDs reject.
+- Final: Ruling: add a small private local runtime binding file — a lost settings file must not cause another company to adopt existing history; same-company recovery preserves identities. No SQL schema change. Cost: intentionally adopting an unbound pre-existing runtime requires a separately reviewed migration rather than implicit init.
+- Final: Ruling: real Codex login/conversation usefulness remains owner-first-use evidence, not a synthetic-test claim; the verified launcher and provider-owned flows are installed without running actual company onboarding. Cost: model/account-specific behavior must be observed during first use.
+- Final: Ruling: hostile privileged-host races and inherited malicious Codex configuration stay outside this explicitly trusted-operator architecture; no sandbox-isolation claim is made. Cost: a compromised host cannot be made safe by these local settings checks.
+- Installed mz at ~/.local/bin/mz and verified version/init/guide/API help from /tmp. GitHub CLI was absent; installed official gh2.103.3 user-locally after checking both the published checksum and release asset SHA256 digest. No GitHub/Codex authentication or actual company initialization was performed.
+
+- Final fix-pass verification: npm run check424/424 + build/lint/format and typecheck passed. The simultaneous config/binding recovery probe passed. No deferred minors remain after effect-based regrading/fixes; no second reviewer requested. Local user-facing launcher is installed and actual owner settings remain absent.

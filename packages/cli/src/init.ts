@@ -233,20 +233,23 @@ export async function runInitCli(
             )
           )
             throw new Error();
+          const protocol = repo.startsWith('git@') ? 'ssh' : 'https';
           await login('gh', [
             'auth',
             'login',
             '--hostname',
             'github.com',
             '--git-protocol',
-            'https',
+            protocol,
             '--web',
           ]);
-          await execute(
-            'gh',
-            ['auth', 'setup-git', '--hostname', 'github.com'],
-            { env, timeout: 10000, maxBuffer: 1024 },
-          );
+          if (protocol === 'https') {
+            await execute(
+              'gh',
+              ['auth', 'setup-git', '--hostname', 'github.com'],
+              { env, timeout: 10000, maxBuffer: 1024 },
+            );
+          }
           let remaining: string[] = [];
           try {
             remaining = await readdir(companyDirectory);

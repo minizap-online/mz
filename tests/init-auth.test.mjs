@@ -60,3 +60,44 @@ test('interactive init delegates authentication to provider-owned commands inste
     'provider owns authentication',
   );
 });
+test('SSH repository authentication selects SSH key setup and preserves the selected transport', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'mz-init-ssh-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const bin = join(root, 'bin');
+  await mkdir(bin);
+  const env = {
+    PATH: bin + ':' + process.env.PATH,
+    MZ_CONFIG_FILE: join(root, 'settings/config.json'),
+    XDG_STATE_HOME: join(root, 'state'),
+    XDG_DATA_HOME: join(root, 'data'),
+    MZ_TEST_AUTH_ROOT: root,
+  };
+  const prefix = `#!${process.execPath}\nimport fs from 'node:fs';import path from 'node:path';const root=process.env.MZ_TEST_AUTH_ROOT;const args=process.argv.slice(2);\n`;
+  await writeFile(join(bin, 'codex'), prefix + `process.exit(0);`, {
+    mode: 0o700,
+  });
+  await writeFile(
+    join(bin, 'gh'),
+    prefix +
+      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'auth.json'),JSON.stringify(args));process.exit(0);}process.exit(9);`,
+    { mode: 0o700 },
+  );
+  await writeFile(
+    join(bin, 'git'),
+    prefix +
+      `if(args[0]==='clone'){if(!fs.existsSync(path.join(root,'auth.json')))process.exit(128);const auth=JSON.parse(fs.readFileSync(path.join(root,'auth.json')));if(auth[auth.indexOf('--git-protocol')+1]!=='ssh')process.exit(128);if(args[2]!=='git@github.com:example/company.git')process.exit(9);fs.mkdirSync(args.at(-1),{recursive:true,mode:448});process.exit(0);}process.exit(9);`,
+    { mode: 0o700 },
+  );
+  const result = await runInitCli(
+    ['--repository', 'git@github.com:example/company.git'],
+    {
+      env,
+      terminal: true,
+      question: async (label, fallback) =>
+        /authenticate/i.test(label) ? 'yes' : fallback,
+    },
+  );
+  assert.equal(result.exitCode, 0, result.stderr);
+  const auth = JSON.parse(await readFile(join(root, 'auth.json'), 'utf8'));
+  assert.equal(auth[auth.indexOf('--git-protocol') + 1], 'ssh');
+});
