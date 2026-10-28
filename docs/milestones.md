@@ -58,7 +58,7 @@ Tickets: [FR-012](tickets/FR-012.md)
 
 Exit criteria: A real idea passes intake, triage, human activation, initial knowledge and independent assurance into development. Manual steps are allowed.
 
-Tickets: [FR-014 guided devbox installation and company onboarding](tickets/FR-014.md) addresses the owner's concrete pilot setup friction. [FR-015](tickets/FR-015.md) drafts the owner-selected GitHub App connection/project-provisioning extension with protected human ownership; implementation awaits design approval. Actual pilot company/project context is collected through MZ, not inferred from development fixtures.
+Tickets: [FR-014 guided devbox installation and company onboarding](tickets/FR-014.md) addresses the owner's concrete pilot setup friction. [FR-015](tickets/FR-015.md) delivers the owner-selected GitHub App connection/project-provisioning extension with protected human ownership; actual App setup and pilot activation remain owner operations through MZ. Actual pilot company/project context is collected through MZ, not inferred from development fixtures.
 
 <a id="m-06"></a>
 

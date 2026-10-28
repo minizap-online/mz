@@ -1,6 +1,6 @@
 # Organization-owned GitHub App with protected owner access
 
-Design draft for [FR-015](../../tickets/FR-015.md), 2026-10-28. Direction selected by the owner; this document awaits approval. No App integration or new project command is implemented yet.
+Approved design for [FR-015](../../tickets/FR-015.md), 2026-10-28; merged in PR35. Implementation delivered in PR36; actual owner GitHub setup and pilot activation remain separate evidence.
 
 ## Intent and decisions
 

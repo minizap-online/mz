@@ -60,7 +60,7 @@ Interfaces: `openProvisioningJournal` stores immutable schema1 intent/outcome pe
 
 - [x] One fresh whole-branch reviewer; fix Important/Critical findings in one RED/GREEN pass and full suite.
 - [x] Full `npm run check`, typecheck, installed help/synthetic real Git smoke, docs links and whitespace. Record evidence and limitations in FR015.
-- [ ] Push/PR, exact-head push+PR CI, merge and fast-forward main; rebuild/install local launcher. Synchronize issue/private Project. Actual owner GitHub approval remains inside mz init, not development chat.
+- [x] Push/PR, exact-head push+PR CI, merge and fast-forward main; rebuild/install local launcher. Synchronize issue/private Project. Actual owner GitHub approval remains inside mz init, not development chat.
 
 ## Execution ledger
 
@@ -81,3 +81,5 @@ Final: Ruling: the registration's installation_id callback parameter is not trus
 Final: Ruling: preserve conservative unknown-create recovery through explicit attach rather than automatic adoption by name. Cost if wrong: an ambiguous failure requires owner/steward reconciliation instead of unattended recovery; no duplicate POST or automatic resource deletion.
 
 Final: Ruling: keep minimal repository/project reference scaffolding and no terminal failed record for an unknown provider outcome; owner guide still supplies the actual brief/team and incomplete intents/attempts remain durable pending evidence. Cost if wrong: more project context and failure diagnostics must be supplied during the pilot, rather than falsely declaring full activation or remote failure.
+
+Delivery: PR36 merged 61781d0 after exact-head push/PR CI, main check 466/466 and typecheck passed, installed launcher/help verified. FR015 issue/private Project synchronized to Done. No live owner App setup or website activation was performed.
