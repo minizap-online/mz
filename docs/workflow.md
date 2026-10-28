@@ -42,3 +42,5 @@ M-00 is complete: the TypeScript workspace, help/version CLI, public/private rep
 Follow milestones in order. After FR-012, start the real pilot before adding later automation. Normal work inside authorized scope does not require repeated approval; organizational authority changes, spending and project activation retain the design's human boundary.
 
 Before stopping, update affected tickets and report completed outcomes, verification, outstanding prerequisites and the next actionable ticket. Reference IDs in commits and PRs. Record material design departures as CRs and decisions/ADRs.
+
+FR-014 provides [devbox onboarding](getting-started.md): technical init and remembered defaults, followed by Codex-backed guide/ask owner conversations. The owner selected the company-website pilot; actual company context and the concrete brief are collected inside MZ. This onboarding support does not authorize generalized M-06 scheduling or claim the real pilot has already been activated. The fixture test plan remains maintainer verification rather than owner setup.

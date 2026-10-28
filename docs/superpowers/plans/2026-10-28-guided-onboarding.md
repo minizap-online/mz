@@ -24,7 +24,7 @@
 2. [x] Failing CLI/defaults/wizard tests; implement init, safe Git attach/clone, Codex check and stored configuration precedence with no help side effects.
 3. [x] Failing interactive launch/guide/ask tests with synthetic Codex; implement bounded assignment files, inherited terminal sessions and honest run outcomes; preserve structured API form.
 4. [x] Installer and first-use documentation, saved-default intake simplification, test-plan/skill interface accuracy, full checks and independent review.
-5. [ ] PR/CI/merge/install smoke from outside checkout, ticket/Project evidence; hand over three commands without running real onboarding for the owner.
+5. [x] PR/CI/merge/install smoke from outside checkout, ticket/Project evidence; hand over three commands without running real onboarding for the owner.
 
 ## Review focus
 
@@ -53,3 +53,5 @@
 - Installed mz at ~/.local/bin/mz and verified version/init/guide/API help from /tmp. GitHub CLI was absent; installed official gh2.103.3 user-locally after checking both the published checksum and release asset SHA256 digest. No GitHub/Codex authentication or actual company initialization was performed.
 
 - Final fix-pass verification: npm run check424/424 + build/lint/format and typecheck passed. The simultaneous config/binding recovery probe passed. No deferred minors remain after effect-based regrading/fixes; no second reviewer requested. Local user-facing launcher is installed and actual owner settings remain absent.
+
+- Integration complete: PR31 merged6440176 after exact-head push/PR CI success; main424/424 + typecheck passed. Installed launcher smoke repeated from/tmp. Owner config deliberately remains absent, ready for init→guide→ask. FR014 implementation complete; real company/pilot conversation is not claimed as performed.
