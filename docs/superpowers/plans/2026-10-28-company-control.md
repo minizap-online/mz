@@ -24,4 +24,4 @@ Interface: runOwnerConversation retains its current signature and private Stewar
 - [x] Run build and focused tests; observe missing configuration failures.
 - [x] Add shared policy and mode-specific developer instructions using the documented Codex config override; retain private assignment content and existing sandbox defaults.
 - [x] Document project ownership and missing worker execution; run focused tests, full check and typecheck.
-- [ ] Record evidence, obtain one fresh branch review, and deliver through the existing authorized PR/CI workflow.
+- [x] Record evidence, obtain one fresh branch review, and deliver through the existing authorized PR/CI workflow.
