@@ -51,6 +51,8 @@ test('guide print prepares bounded resumable owner setup without a model or runt
   assert.match(data.request.context, /one question at a time/i);
   assert.match(data.request.context, /ONBOARDING.md/);
   assert.match(data.request.context, /developer/);
+  assert.match(data.request.context, /Company control boundary/);
+  assert.match(data.request.context, /separate project repositor/);
   assert.equal(data.request.scope, 'company');
   assert.ok(Buffer.byteLength(result.stdout) < 131072);
   const state = openRuntimeState({
@@ -128,3 +130,49 @@ test('nonzero Codex outcome is recorded failed and missing TTY/unknown options d
   assert.equal(state.getRun(events[0].runId).outcome, 'failed');
   state.close();
 });
+
+for (const mode of ['guide', 'ask']) {
+  test(`${mode} launches with direct controller instructions without exposing private assignment data`, async (t) => {
+    const f = await fixture(t);
+    const privateFact = 'synthetic-private-infrastructure-fact';
+    await writeFile(
+      join(f.settings.companyDirectory, 'DEVBOX.md'),
+      privateFact,
+    );
+    const args =
+      mode === 'ask' ? ['--read-only', 'synthetic-owner-question'] : [];
+    const result = await conversations.runOwnerConversation(mode, args, {
+      env: f.env,
+      terminal: true,
+    });
+    assert.equal(result.exitCode, 0);
+    const call = JSON.parse(await readFile(f.capture, 'utf8'));
+    const configIndex = call.args.indexOf('-c');
+    assert.ok(
+      configIndex >= 0,
+      'controller policy must be passed as Codex configuration',
+    );
+    const override = call.args[configIndex + 1];
+    assert.ok(override.startsWith('developer_instructions='));
+    const instructions = JSON.parse(
+      override.slice('developer_instructions='.length),
+    );
+    assert.match(instructions, /Company control boundary/);
+    assert.match(instructions, /separate project repositor/);
+    assert.match(instructions, /no developer worker launcher/i);
+    assert.match(
+      instructions,
+      mode === 'guide' ? /one question at a time/ : /MZ steward/,
+    );
+    assert.ok(call.request.context.includes(instructions));
+    assert.match(call.request.context, new RegExp(privateFact));
+    assert.doesNotMatch(
+      JSON.stringify(call.args),
+      /synthetic-private-infrastructure-fact|synthetic-owner-question/,
+    );
+    assert.equal(
+      call.args[call.args.indexOf('--sandbox') + 1],
+      mode === 'ask' ? 'read-only' : 'workspace-write',
+    );
+  });
+}
