@@ -8,6 +8,7 @@ import {
 } from './github-app-transport.js';
 import {
   prepareGitHubAccess,
+  githubRemote,
   githubClientEnvironment,
   bindGitHubProfile,
   companyGitHubEnvironment,
@@ -86,6 +87,13 @@ function repository(value: string): void {
     !url.hostname
   )
     invalid();
+}
+function appRepository(value: string): string {
+  repository(value);
+  const remote = githubRemote(value);
+  if (!remote || ['.', '..'].includes(remote.name)) throw new Error();
+  if (remote.protocol === 'https' && new URL(value).port) throw new Error();
+  return 'https://github.com/' + remote.owner + '/' + remote.name + '.git';
 }
 async function probe(args: string[], env: NodeJS.ProcessEnv): Promise<boolean> {
   try {
@@ -214,6 +222,7 @@ export async function runInitCli(
       exitCode: 2,
     };
   }
+  let stage = 'local settings';
   let terminal: InitTerminal | undefined;
   const openTerminal = (): InitTerminal =>
     host.createTerminal?.() ??
@@ -293,6 +302,13 @@ export async function runInitCli(
     if (!['app', 'token', 'existing', 'oauth'].includes(selectedMethod))
       invalid();
     if (repo || selectedMethod === 'app') {
+      stage = 'repository selection';
+      const transportRepository =
+        selectedMethod === 'app' && repo ? appRepository(repo) : repo;
+      if (repo && transportRepository !== repo)
+        notice(
+          'GitHub App authentication uses HTTPS. MZ will connect to the same repository over HTTPS and bind its fetch/push URLs to the App credential helper.\n',
+        );
       if (repo) repository(repo);
       let entries: string[] = [];
       try {
@@ -305,16 +321,47 @@ export async function runInitCli(
         if (repo) {
           const selected = await execute(
             'git',
-            ['-C', companyDirectory, 'remote', 'get-url', 'origin'],
+            [
+              '-C',
+              companyDirectory,
+              'remote',
+              'get-url',
+              ...(selectedMethod === 'app' ? ['--all'] : []),
+              'origin',
+            ],
             { env, timeout: 5000, maxBuffer: 4096 },
           );
-          if (selected.stdout.trim() !== repo) throw new Error();
+          if (selectedMethod === 'app') {
+            const urls = selected.stdout.trim().split('\n');
+            const push = await execute(
+              'git',
+              [
+                '-C',
+                companyDirectory,
+                'remote',
+                'get-url',
+                '--push',
+                '--all',
+                'origin',
+              ],
+              { env, timeout: 5000, maxBuffer: 4096 },
+            );
+            urls.push(...push.stdout.trim().split('\n'));
+            if (
+              urls.some(
+                (url) =>
+                  appRepository(url).toLowerCase() !==
+                  transportRepository.toLowerCase(),
+              )
+            )
+              throw new Error();
+          } else if (selected.stdout.trim() !== repo) throw new Error();
         }
       }
       let gitEnv: NodeJS.ProcessEnv;
       let profileDirectory: string | undefined;
       if (selectedMethod === 'app') {
-        if (repo && !/^https:\/\/github\.com\//.test(repo)) throw new Error();
+        stage = 'GitHub App connection';
         if (values['github-app-file'])
           await importAppConnection({
             companyDirectory,
@@ -369,22 +416,27 @@ export async function runInitCli(
           ? githubClientEnvironment(env, profileDirectory)
           : await companyGitHubEnvironment(companyDirectory, env);
       }
+      stage = 'repository connection';
       if (repo && entries.length === 0) {
         await mkdir(dirname(companyDirectory), {
           recursive: true,
           mode: 0o700,
         });
         const clone = async (): Promise<void> => {
-          await execute('git', ['clone', '--', repo, companyDirectory], {
-            timeout: 120000,
-            maxBuffer: 4096,
-            env: { ...gitEnv, GIT_TERMINAL_PROMPT: '0' },
-          });
+          await execute(
+            'git',
+            ['clone', '--', transportRepository, companyDirectory],
+            {
+              timeout: 120000,
+              maxBuffer: 4096,
+              env: { ...gitEnv, GIT_TERMINAL_PROMPT: '0' },
+            },
+          );
         };
         await clone();
       } else {
         if (repo && (profileDirectory || selectedMethod === 'app'))
-          await execute('git', ['ls-remote', repo], {
+          await execute('git', ['ls-remote', transportRepository], {
             env: { ...gitEnv, GIT_TERMINAL_PROMPT: '0' },
             timeout: 30000,
             maxBuffer: 4096,
@@ -392,11 +444,28 @@ export async function runInitCli(
       }
       if (profileDirectory)
         await bindGitHubProfile(companyDirectory, profileDirectory, gitEnv);
-      if (repo && selectedMethod === 'app')
+      if (repo && selectedMethod === 'app') {
+        stage = 'App repository binding';
+        for (const key of ['remote.origin.url', 'remote.origin.pushurl'])
+          await execute(
+            'git',
+            [
+              '-C',
+              companyDirectory,
+              'config',
+              '--local',
+              '--replace-all',
+              key,
+              transportRepository,
+            ],
+            { env, timeout: 5000, maxBuffer: 4096 },
+          );
         await bindAppGit(companyDirectory, env);
+      }
     } else if (values['github-token-file'] || values['github-auth']) {
       invalid();
     }
+    stage = 'company shell and local settings';
     let marker: { id: string; name: string } | undefined;
     try {
       marker = (
@@ -442,6 +511,7 @@ export async function runInitCli(
       });
       await bindAppGit(companyDirectory, env);
     }
+    stage = 'Codex connection';
     const available = await probe(['--version'], env);
     let authenticated = available && (await probe(['login', 'status'], env));
     if (!yes && interactive && available && !authenticated) {
@@ -474,8 +544,7 @@ export async function runInitCli(
   } catch {
     return {
       stdout: '',
-      stderr:
-        'MZ init could not finish. Check private local paths, existing company files and Git access. Existing knowledge/settings are preserved; partial new shell files may remain and can be inspected before rerunning. For GitHub, use a fine-grained token in the hidden credential field or --github-token-file (protected file); choose broader OAuth explicitly if intended. Never put a token in command arguments or company conversation. Check repository selection/org approval and local GitHub profile access; optional write grants are not assumed. Run mz init --help.\n',
+      stderr: `MZ init could not finish during ${stage}. Check private local paths, existing company files and Git access. Existing knowledge/settings are preserved; partial setup files may remain. For App setup, rerun mz init --github-auth app to resume; if registration was started but its credential return was lost, recover the existing App using the protected import described at https://github.com/minizap-online/mz/blob/main/docs/github-app.md instead of creating a duplicate. GitHub SSH clone URLs are accepted and use HTTPS for App credentials. Token/existing/OAuth are explicit alternatives, not recovery fallbacks. Never put credentials in command arguments or company conversation. Run mz init --help.\n`,
       exitCode: 1,
     };
   } finally {
