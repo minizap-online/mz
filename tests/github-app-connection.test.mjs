@@ -294,11 +294,28 @@ test('real Git credential fill uses a narrowed App token through the native help
       (error, stdout) => (error ? reject(error) : resolve(stdout)),
     );
     child.stdin.end(
-      'protocol=https\nhost=github.com\npath=sample-org/website.git\n\n',
+      'capability[]=authtype\ncapability[]=state\nprotocol=https\nhost=github.com\npath=sample-org/website.git\nwwwauth[]=Basic realm=GitHub\nwwwauth[]=Bearer realm=GitHub\n\n',
     );
   });
   assert.match(output, /password=ghs_synthetic_narrow_repo/);
   assert.doesNotMatch(output, /synthetic_personal/);
+  const { runGitHubAppCli } =
+    await import('../packages/cli/dist/github-app-transport.js');
+  for (const duplicate of [
+    'protocol=https',
+    'host=other.example',
+    'path=sample-org/other.git',
+  ]) {
+    const refused = await runGitHubAppCli(
+      ['credential', 'get'],
+      { ...env, MZ_GITHUB_APP_COMPANY: company },
+      'protocol=https\nhost=github.com\npath=sample-org/website.git\n' +
+        duplicate +
+        '\n\n',
+    );
+    assert.equal(refused.stdout, 'quit=true\n\n');
+    assert.doesNotMatch(refused.stdout, /ghs_/);
+  }
 });
 test('project CLI creates and resumes a synthetic website through App authorization and Core journal', async (t) => {
   const { runInitCli } = await import('../packages/cli/dist/init.js');
@@ -428,6 +445,7 @@ for (const scenario of [
   'foreign-fetch',
   'foreign-push',
   'rewrite',
+  'git-read-failure',
 ])
   test('App SSH transport: ' + scenario, async (t) => {
     const existing = scenario !== 'clone';
@@ -448,7 +466,7 @@ for (const scenario of [
     const calls = join(root, 'git-calls');
     await writeFile(
       join(bin, 'git'),
-      `#!${process.execPath}\nimport fs from'node:fs';import{spawnSync}from'node:child_process';const args=process.argv.slice(2);fs.appendFileSync(${JSON.stringify(calls)},JSON.stringify(args)+'\\n');if(args[0]==='clone'){const dest=args.at(-1);const r=spawnSync('/usr/bin/git',['clone','--',${JSON.stringify(bare)},dest],{stdio:'ignore'});if(r.status)process.exit(r.status);spawnSync('/usr/bin/git',['-C',dest,'remote','set-url','origin',args.at(-2)]);process.exit(0);}if(args[0]==='ls-remote'&&!args.includes('--get-url'))process.exit(0);const r=spawnSync('/usr/bin/git',args,{stdio:'inherit'});process.exit(r.status??1);`,
+      `#!${process.execPath}\nimport fs from'node:fs';import{spawnSync}from'node:child_process';const args=process.argv.slice(2);fs.appendFileSync(${JSON.stringify(calls)},JSON.stringify(args)+'\\n');if(args[0]==='clone'){const dest=args.at(-1);const r=spawnSync('/usr/bin/git',['clone','--',${JSON.stringify(bare)},dest],{stdio:'ignore'});if(r.status)process.exit(r.status);spawnSync('/usr/bin/git',['-C',dest,'remote','set-url','origin',args.at(-2)]);process.exit(0);}if(args[0]==='ls-remote'&&!args.includes('--get-url'))process.exit(${scenario === 'git-read-failure' ? 128 : 0});const r=spawnSync('/usr/bin/git',args,{stdio:'inherit'});process.exit(r.status??1);`,
       { mode: 0o700 },
     );
     await writeFile(
@@ -518,6 +536,15 @@ for (const scenario of [
         question: async (_label, fallback) => fallback,
       },
     );
+    if (scenario === 'git-read-failure') {
+      assert.equal(result.exitCode, 1);
+      assert.match(result.stderr, /App connection is saved/);
+      assert.doesNotMatch(
+        result.stderr,
+        /recover the existing App|rejected.*registration/,
+      );
+      return;
+    }
     if (scenario === 'rewrite') {
       assert.equal(result.exitCode, 1);
       assert.match(result.stderr, /HTTPS transport/);
