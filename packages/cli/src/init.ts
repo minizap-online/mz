@@ -572,7 +572,7 @@ export async function runInitCli(
       stdout: '',
       stderr:
         appSelected && stage === 'repository connection'
-          ? 'MZ init could not finish during repository connection. The GitHub App connection is saved. Retry mz init with the same company directory/repository and app method; no new App registration or token is needed. Check mz github status for the saved connection and repository access. Existing credentials and company knowledge are preserved. Run mz init --help.\n'
+          ? 'MZ init could not finish during repository connection. The GitHub App connection is saved. Retry mz init with the same company directory/repository and app method; no new App registration or token is needed. Existing credentials and company knowledge are preserved. Run mz init --help.\n'
           : `MZ init could not finish during ${stage}. Check private local paths, existing company files and Git access. Existing knowledge/settings are preserved; partial setup files may remain. For App setup, rerun mz init --github-auth app to resume; if registration was started but its credential return was lost, recover the existing App using the protected import described at https://github.com/minizap-online/mz/blob/main/docs/github-app.md instead of creating a duplicate. GitHub SSH clone URLs are accepted and use HTTPS for App credentials. Token/existing/OAuth are explicit alternatives, not recovery fallbacks. Never put credentials in command arguments or company conversation. Run mz init --help.\n`,
       exitCode: 1,
     };

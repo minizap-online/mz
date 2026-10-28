@@ -34,4 +34,4 @@ Retries use a stable action identity, optionally supplied with `--action UUID`. 
 
 No real App registration, installation, permission change or project activation is performed by development verification. Synthetic tests and actual owner setup are separate evidence.
 
-If browser setup completes but init fails at repository connection, the saved App connection is retained. Rerun init with the same company directory/repository and App method; no new registration, rejected-form confirmation, tunnel or personal token is needed for that resume. `mz github status` verifies the saved connection. Git credential capability/challenge/state arrays are advisory; the helper ignores them while validating protocol, host and repository identity strictly.
+If browser setup completes but init fails at repository connection, the saved App connection is retained. Rerun init with the same company directory/repository and App method; no new registration, rejected-form confirmation, tunnel or personal token is needed for that resume. Git credential capability/challenge/state arrays are advisory; the helper ignores them while validating protocol, host and repository identity strictly.
