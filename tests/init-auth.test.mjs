@@ -26,13 +26,13 @@ test('interactive init delegates authentication to provider-owned commands inste
   await writeFile(
     join(bin, 'git'),
     prefix +
-      `if(args[0]==='clone'){if(!fs.existsSync(path.join(root,'github-auth')))process.exit(128);fs.mkdirSync(args.at(-1),{recursive:true,mode:448});process.exit(0);}process.exit(9);`,
+      `if(args[0]==='clone'){if(!fs.existsSync(path.join(root,'github-auth')))process.exit(128);fs.mkdirSync(args.at(-1),{recursive:true,mode:448});process.exit(0);}if(args.includes('config'))process.exit(0);process.exit(9);`,
     { mode: 0o700 },
   );
   await writeFile(
     join(bin, 'gh'),
     prefix +
-      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'github-auth'),'provider owns authentication');process.exit(0);}if(args[0]==='auth'&&args[1]==='setup-git')process.exit(0);process.exit(9);`,
+      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'github-auth'),'provider owns authentication');fs.writeFileSync(path.join(process.env.GH_CONFIG_DIR,'hosts.yml'),'{}',{mode:384});process.exit(0);}if(args[0]==='auth'&&args[1]==='setup-git')process.exit(0);if(args[0]==='api'){console.log('sample-member');process.exit(0);}process.exit(9);`,
     { mode: 0o700 },
   );
   const prompts = [];
@@ -41,8 +41,10 @@ test('interactive init delegates authentication to provider-owned commands inste
     {
       env,
       terminal: true,
+      notice: () => {},
       question: async (label, fallback) => {
         prompts.push(label);
+        if (/GitHub authentication method/.test(label)) return 'oauth';
         return /sign.in|authenticate/i.test(label) ? 'yes' : fallback;
       },
     },
@@ -79,13 +81,13 @@ test('SSH repository authentication selects SSH key setup and preserves the sele
   await writeFile(
     join(bin, 'gh'),
     prefix +
-      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'auth.json'),JSON.stringify(args));process.exit(0);}process.exit(9);`,
+      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'auth.json'),JSON.stringify(args));fs.writeFileSync(path.join(process.env.GH_CONFIG_DIR,'hosts.yml'),'{}',{mode:384});process.exit(0);}if(args[0]==='api'){console.log('sample-member');process.exit(0);}process.exit(9);`,
     { mode: 0o700 },
   );
   await writeFile(
     join(bin, 'git'),
     prefix +
-      `if(args[0]==='clone'){if(!fs.existsSync(path.join(root,'auth.json')))process.exit(128);const auth=JSON.parse(fs.readFileSync(path.join(root,'auth.json')));if(auth[auth.indexOf('--git-protocol')+1]!=='ssh')process.exit(128);if(args[2]!=='git@github.com:example/company.git')process.exit(9);fs.mkdirSync(args.at(-1),{recursive:true,mode:448});process.exit(0);}process.exit(9);`,
+      `if(args[0]==='clone'){if(!fs.existsSync(path.join(root,'auth.json')))process.exit(128);const auth=JSON.parse(fs.readFileSync(path.join(root,'auth.json')));if(auth[auth.indexOf('--git-protocol')+1]!=='ssh')process.exit(128);if(args[2]!=='git@github.com:example/company.git')process.exit(9);fs.mkdirSync(args.at(-1),{recursive:true,mode:448});process.exit(0);}if(args.includes('config'))process.exit(0);process.exit(9);`,
     { mode: 0o700 },
   );
   const result = await runInitCli(
@@ -93,8 +95,13 @@ test('SSH repository authentication selects SSH key setup and preserves the sele
     {
       env,
       terminal: true,
+      notice: () => {},
       question: async (label, fallback) =>
-        /authenticate/i.test(label) ? 'yes' : fallback,
+        /GitHub authentication method/.test(label)
+          ? 'oauth'
+          : /authenticate/i.test(label)
+            ? 'yes'
+            : fallback,
     },
   );
   assert.equal(result.exitCode, 0, result.stderr);
