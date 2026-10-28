@@ -1,4 +1,6 @@
-# MZ owner test plan
+# MZ maintainer acceptance test plan
+
+For normal first use, follow [mz init → mz guide → mz ask](getting-started.md); the manual paths/UUIDs below are test-fixture plumbing, not onboarding requirements.
 
 Use this plan to check the delivered CLI and understand which parts are ready for a real pilot. Start with synthetic local data: the offline walkthrough needs no credentials, model calls or production configuration. Allow roughly 20–30 minutes for the first run. Live checks are separate and optional.
 
@@ -19,7 +21,7 @@ Use this plan to check the delivered CLI and understand which parts are ready fo
 | Worker guidance   | Thin skill with implemented commands, assigned scope and recording boundaries                                                                              | FR-011; `packages/skill/SKILL.md`                                                |
 | Steward           | Curated/scoped runtime status; bounded advisory discussion, same-scope continuity and private response/handover; separately approved decision writer/audit | FR-012; `mz status`, configured `mz ask`, trusted host Core recording interfaces |
 
-FR-001 through FR-011 and FR-013 are complete. FR-012 implementation is merged; its remaining acceptance item is starting a real authorized pilot. There is no web UI, automatic worker execution, live GitHub work integration or autonomous project activation. The current development version is 0.1.0; these are private workspace packages, not published npm releases. See the [ticket register](tickets/README.md) and [M-04 evidence](milestone-m04-verification.md).
+FR-001 through FR-011 and FR-013 are complete. FR-014 adds devbox installation, remembered technical setup and Codex-backed owner onboarding; see its ticket for current verification. FR-012 implementation is merged; its remaining acceptance item is starting a real authorized pilot. There is no web UI, automatic worker execution, live GitHub work integration or autonomous project activation. The current development version is 0.1.0; these are private workspace packages, not published npm releases. See the [ticket register](tickets/README.md) and [M-04 evidence](milestone-m04-verification.md).
 
 ## 1 Install and run regression checks
 
@@ -33,7 +35,7 @@ npm run check
 npm run typecheck
 ```
 
-Pass: installation, build, lint, formatting, tests and typecheck succeed. Baseline on 2026-10-28: all 403 automated tests passed, including clean installation, encrypted fixture restoration and synthetic steward HTTP tests. Those tests do not make live model/provider calls. Record the actual current test count and commit when you run them.
+Pass: installation, build, lint, formatting, tests and typecheck succeed. Pre-onboarding baseline on 2026-10-28: all 403 automated tests passed, including clean installation, encrypted fixture restoration and synthetic steward HTTP tests. Those tests do not make live model/provider calls. Record the actual current test count and commit when you run them.
 
 ## 2 Create an isolated synthetic workspace
 

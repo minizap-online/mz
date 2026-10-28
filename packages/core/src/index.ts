@@ -148,3 +148,13 @@ export type {
   StewardDecisionWriter,
   StewardDecisionProposal,
 } from './steward-decisions.js';
+export {
+  InstallationError,
+  installationPaths,
+  readLocalInstallation,
+  initializeLocalInstallation,
+} from './installation.js';
+export type {
+  LocalInstallation,
+  InitializeLocalInstallationOptions,
+} from './installation.js';
