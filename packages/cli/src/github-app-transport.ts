@@ -1,6 +1,6 @@
 import { chmod, lstat, readFile } from 'node:fs/promises';
 import { preparePrivateHostDirectory, writePrivateArtifact } from '@mz/core';
-import { nativeExecutable } from './github-client.js';
+import { nativeExecutable, NO_GITHUB_KEYRING } from './github-client.js';
 import { promisify } from 'node:util';
 import { execFile, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,9 @@ export function appGitEnvironment(
   const result: NodeJS.ProcessEnv = {
     ...env,
     MZ_GITHUB_APP_COMPANY: resolve(companyDirectory),
+    GIT_TERMINAL_PROMPT: '0',
+    GIT_ASKPASS: '/usr/bin/false',
+    SSH_ASKPASS: '/usr/bin/false',
     PATH: join(appDirectory(env), 'bin') + delimiter + (env.PATH ?? ''),
   };
   for (const name of [
@@ -119,6 +122,16 @@ export async function runGitHubAppCli(
     const saved = await selected(env);
     if (args[0] === 'gh') {
       const nativeArgs = args.slice(2);
+      if (
+        nativeArgs.some(
+          (arg) =>
+            arg === '--hostname' ||
+            arg.startsWith('--hostname=') ||
+            /^[a-z][a-z0-9+.-]*:\/\//i.test(arg) ||
+            arg.startsWith('//'),
+        )
+      )
+        return failure;
       const executable = args[1];
       if (
         executable &&
@@ -171,6 +184,7 @@ export async function runGitHubAppCli(
               env: {
                 ...clean,
                 GH_TOKEN: credential,
+                DBUS_SESSION_BUS_ADDRESS: NO_GITHUB_KEYRING,
                 GH_HOST: 'github.com',
                 GH_CONFIG_DIR: join(saved.directory, 'native'),
               },
@@ -237,6 +251,9 @@ export async function runGitHubAppCli(
       exitCode: 2,
     };
   } catch {
+    // Git otherwise treats a helper error as permission to try askpass or another source.
+    if (args[0] === 'credential' && args[1] === 'get')
+      return { ...failure, stdout: 'quit=true\n\n', exitCode: 0 };
     return failure;
   }
 }

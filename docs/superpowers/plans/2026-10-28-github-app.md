@@ -58,8 +58,8 @@ Interfaces: `openProvisioningJournal` stores immutable schema1 intent/outcome pe
 
 ### Task 4: Review and delivery
 
-- [ ] One fresh whole-branch reviewer; fix Important/Critical findings in one RED/GREEN pass and full suite.
-- [ ] Full `npm run check`, typecheck, installed help/synthetic real Git smoke, docs links and whitespace. Record evidence and limitations in FR015.
+- [x] One fresh whole-branch reviewer; fix Important/Critical findings in one RED/GREEN pass and full suite.
+- [x] Full `npm run check`, typecheck, installed help/synthetic real Git smoke, docs links and whitespace. Record evidence and limitations in FR015.
 - [ ] Push/PR, exact-head push+PR CI, merge and fast-forward main; rebuild/install local launcher. Synchronize issue/private Project. Actual owner GitHub approval remains inside mz init, not development chat.
 
 ## Execution ledger
@@ -73,3 +73,11 @@ Ruling: GitHub's documented GET /app response has no public/private visibility f
 Ruling: preserve the existing trusted-host owner-session boundary for this pilot; no claim of untrusted worker isolation until a separate signing principal/broker is deployed. Cost if wrong: same-user malicious code could read the host key; GitHub's excluded membership/administration authority remains the direct owner-access boundary.
 
 Ruling: Core uses new version1 immutable host-file provisioning journals, avoiding an unrelated SQLite migration while storing no planning authority/content/secret values there. Cost if wrong: runtime backups must separately include these host artifacts; documentation states their location and partial-success recovery.
+
+Final review: three Important findings, no Critical or Minor findings. One fix pass reproduced each with failing regressions and fixed (1) real Git askpass fallback via terminal quit=true plus disabled prompts; (2) lost registration/conversion history via a durable pre-registration intent and explicit recovery/import; (3) alternate/plaintext native API destinations and keyring fallback via relative GitHub endpoints only, rejected hostname overrides and child-only disabled D-Bus. All three targeted regressions GREEN; full post-fix suite 466/466 plus build/lint/format/typecheck. No deferred Minor findings.
+
+Final: Ruling: the registration's installation_id callback parameter is not trusted; discover and verify the App's configured organization installation independently. Cost if wrong: callback mismatches are not individually diagnosed, but no foreign installation is selected.
+
+Final: Ruling: preserve conservative unknown-create recovery through explicit attach rather than automatic adoption by name. Cost if wrong: an ambiguous failure requires owner/steward reconciliation instead of unattended recovery; no duplicate POST or automatic resource deletion.
+
+Final: Ruling: keep minimal repository/project reference scaffolding and no terminal failed record for an unknown provider outcome; owner guide still supplies the actual brief/team and incomplete intents/attempts remain durable pending evidence. Cost if wrong: more project context and failure diagnostics must be supplied during the pilot, rather than falsely declaring full activation or remote failure.

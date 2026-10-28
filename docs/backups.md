@@ -52,3 +52,5 @@ The fixture acceptance is separate from deployment. Before relying on production
 ## Verification boundary
 
 `tests/backups.test.mjs` uses synthetic data and a local AES-256-GCM fixture hook, authenticates/decrypts a real native snapshot, deletes the original database, and restores through Core. It checks actual data/history, corruption rejection, v1 migration, WAL transaction consistency, receipt/audit failure handling, pending markers, staging cleanup, lifecycle and freshness. This test hook is not a supported production archive format. No real credentials, remote upload, schedule, retention policy, or production restore were exercised.
+
+FR-015 adds [App connection metadata/keys and Core provisioning journals](github-app.md) as separate protected host artifacts. An SQLite backup alone does not include them. Include them in the control-plane host backup/secret recovery policy; do not put keys into company Git. A pending remote create needs reconciliation rather than blind retry after restoration. This change does not claim live backup deployment.

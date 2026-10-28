@@ -35,6 +35,16 @@ export async function startAppSetup(
   )
     throw new Error('Invalid GitHub identity.');
   const state = randomBytes(32).toString('hex');
+  // Persist intent before exposing a registration form: GitHub may create the App even if its return is lost.
+  await writePrivateArtifact(
+    join(appDirectory(options.env), 'registration.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      organization: options.organization,
+      owner: options.owner,
+    }) + '\n',
+    [options.companyDirectory],
+  );
   // Assigned before the listener can accept a setup request.
   // eslint-disable-next-line prefer-const
   let base: URL;
@@ -290,6 +300,22 @@ export async function connectGitHubApp(
     );
     await completePendingApp(options);
     return;
+  }
+  const registrationPath = join(appDirectory(options.env), 'registration.json');
+  let registrationExists = false;
+  try {
+    await lstat(registrationPath);
+    registrationExists = true;
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT'))
+      throw error;
+  }
+  if (registrationExists) {
+    await readPrivateArtifact(registrationPath, [options.companyDirectory]);
+    options.notice(
+      'An earlier App registration may already exist or its credential response may have been lost. Recover that registration/key in GitHub and use --github-app-file. MZ will not start a duplicate registration. If GitHub confirms no App was created, remove only this protected registration intent before starting over.\n',
+    );
+    throw new Error('Existing registration requires recovery/import.');
   }
   const organization = await options.question(
     'GitHub organization for this MZ connection',
