@@ -1,3 +1,4 @@
+import { companyGitHubEnvironment } from './github-auth.js';
 import { execFile, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { promisify } from 'node:util';
@@ -253,6 +254,10 @@ export async function runOwnerConversation(
       'Read the private MZ owner assignment JSON file ' +
       JSON.stringify(path) +
       '. Use its context/status/history as evidence and its question as the owner request. Follow the MZ owner guide/steward workflow described in the assignment. Do not print the entire file.';
+    const ownerEnv = await companyGitHubEnvironment(
+      settings.companyDirectory,
+      env,
+    );
     const code = await launch(
       [
         '--cd',
@@ -265,7 +270,7 @@ export async function runOwnerConversation(
         prompt,
       ],
       settings.companyDirectory,
-      env,
+      ownerEnv,
     );
     state.finishRun({
       id: runId,

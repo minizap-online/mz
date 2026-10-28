@@ -1,3 +1,11 @@
+import {
+  prepareGitHubAccess,
+  githubClientEnvironment,
+  bindGitHubProfile,
+  companyGitHubEnvironment,
+  type GitHubAuthMode,
+} from './github-auth.js';
+import { hiddenSecret } from './secret-prompt.js';
 import { execFile, spawn } from 'node:child_process';
 import { readdir, mkdir } from 'node:fs/promises';
 import { dirname, resolve, join } from 'node:path';
@@ -21,14 +29,19 @@ Options:
   --repository URL        Clone an existing HTTPS or git@host company repository
   --id SLUG               Technical organization identity for a new company marker
   --name NAME             Initial display name (can be refined in the company context)
+  --github-auth MODE      token (recommended), existing, or explicitly broader oauth
+  --github-token-file FILE  Read a fine-grained token from an existing protected file
   --state-directory DIR   Local runtime/source/session storage outside Git
   --yes                   Use supplied options/defaults without terminal questions
   --json                  Emit local settings and Codex availability
   -h, --help              Show help without setup
 
 Settings: MZ_CONFIG_FILE or ~/.config/mz/config.json (XDG_CONFIG_HOME supported).
-Existing files/settings are preserved. No key values are requested or copied.
-Interactive setup can open GitHub/Codex provider-owned sign-in when needed; --yes never initiates login.
+Existing company files/settings are preserved. GitHub scope/identity guidance comes before login.
+Interactive GitHub setup recommends a fine-grained token via hidden credential input or protected-file reference;
+no token argument, company-context prompt, or implicit browser OAuth. OAuth uses broader repo/read:org/gist scopes
+and is only an explicit choice. MZ uses a private native gh profile with owner-only, unencrypted file storage.
+Codex/ChatGPT model authentication is separate. --yes never starts an interactive login.
 This devbox store is a local pilot workspace, not a verified authoritative server/backup deployment.
 Next: mz guide, then mz ask. No model call is made by init.
 `;
@@ -78,6 +91,8 @@ export interface InitHost {
   env?: NodeJS.ProcessEnv;
   terminal?: boolean;
   question?: (label: string, fallback: string) => Promise<string>;
+  notice?: (text: string) => void;
+  readSecret?: () => Promise<Buffer>;
 }
 async function nativeLogin(
   command: string,
@@ -125,6 +140,8 @@ export async function runInitCli(
           '--id',
           '--name',
           '--state-directory',
+          '--github-auth',
+          '--github-token-file',
         ].includes(arg)
       )
         invalid();
@@ -140,6 +157,23 @@ export async function runInitCli(
         exitCode: 2,
       };
     if (values['repository']) repository(values['repository']);
+    if (
+      values['github-auth'] &&
+      !['token', 'existing', 'oauth'].includes(values['github-auth'])
+    )
+      invalid();
+    if (
+      values['github-token-file'] &&
+      values['github-auth'] &&
+      values['github-auth'] !== 'token'
+    )
+      invalid();
+    if (
+      yes &&
+      (values['github-auth'] === 'oauth' ||
+        (values['github-auth'] === 'token' && !values['github-token-file']))
+    )
+      invalid();
   } catch {
     return {
       stdout: '',
@@ -170,21 +204,48 @@ export async function runInitCli(
         ).trim() || fallback
       );
     };
-    const login = async (command: string, args: string[]): Promise<void> => {
+    const login = async (
+      command: string,
+      args: string[],
+      loginEnv: NodeJS.ProcessEnv = env,
+    ): Promise<void> => {
       terminal?.close();
       terminal = undefined;
-      await nativeLogin(command, args, env);
+      await nativeLogin(command, args, loginEnv);
       if (!yes && !host.question)
         terminal = createInterface({
           input: process.stdin,
           output: process.stdout,
         });
     };
+    const notice =
+      host.notice ??
+      ((text: string): void => {
+        (json ? process.stderr : process.stdout).write(text);
+      });
+    const readSecret = async (): Promise<Buffer> => {
+      terminal?.close();
+      terminal = undefined;
+      try {
+        return await (
+          host.readSecret ??
+          (() => hiddenSecret('Fine-grained GitHub token (hidden)'))
+        )();
+      } finally {
+        if (!yes && !host.question)
+          terminal = createInterface({
+            input: process.stdin,
+            output: process.stdout,
+          });
+      }
+    };
     const companyDirectory = resolve(
       values['company'] ??
         existing?.companyDirectory ??
         (await ask('Company directory', paths.companyDirectory)),
     );
+    if (existing && existing.companyDirectory !== companyDirectory)
+      throw new Error();
     const repo =
       values['repository'] ??
       (existing
@@ -202,6 +263,33 @@ export async function runInitCli(
         if (!(e instanceof Error && 'code' in e && e.code === 'ENOENT'))
           throw e;
       }
+      if (entries.length > 0) {
+        const selected = await execute(
+          'git',
+          ['-C', companyDirectory, 'remote', 'get-url', 'origin'],
+          { env, timeout: 5000, maxBuffer: 4096 },
+        );
+        if (selected.stdout.trim() !== repo) throw new Error();
+      }
+      const access = await prepareGitHubAccess({
+        repository: repo,
+        companyDirectory,
+        env,
+        interactive: !yes && !!interactive,
+        ...(values['github-auth']
+          ? { method: values['github-auth'] as GitHubAuthMode }
+          : {}),
+        ...(values['github-token-file']
+          ? { tokenFile: values['github-token-file'] }
+          : {}),
+        question: ask,
+        notice,
+        readSecret,
+        login,
+      });
+      const gitEnv = access.profileDirectory
+        ? githubClientEnvironment(env, access.profileDirectory)
+        : await companyGitHubEnvironment(companyDirectory, env);
       if (entries.length === 0) {
         await mkdir(dirname(companyDirectory), {
           recursive: true,
@@ -211,67 +299,26 @@ export async function runInitCli(
           await execute('git', ['clone', '--', repo, companyDirectory], {
             timeout: 120000,
             maxBuffer: 4096,
-            env: { ...env, GIT_TERMINAL_PROMPT: '0' },
+            env: { ...gitEnv, GIT_TERMINAL_PROMPT: '0' },
           });
         };
-        try {
-          await clone();
-        } catch {
-          const github =
-            repo.startsWith('git@github.com:') ||
-            (repo.startsWith('https:') &&
-              new URL(repo).hostname === 'github.com');
-          if (
-            yes ||
-            !interactive ||
-            !github ||
-            !/^(?:y|yes)$/i.test(
-              await ask(
-                'Authenticate with GitHub in its browser sign-in now?',
-                'yes',
-              ),
-            )
-          )
-            throw new Error();
-          const protocol = repo.startsWith('git@') ? 'ssh' : 'https';
-          await login('gh', [
-            'auth',
-            'login',
-            '--hostname',
-            'github.com',
-            '--git-protocol',
-            protocol,
-            '--web',
-          ]);
-          if (protocol === 'https') {
-            await execute(
-              'gh',
-              ['auth', 'setup-git', '--hostname', 'github.com'],
-              { env, timeout: 10000, maxBuffer: 1024 },
-            );
-          }
-          let remaining: string[] = [];
-          try {
-            remaining = await readdir(companyDirectory);
-          } catch (error) {
-            if (!(
-              error instanceof Error &&
-              'code' in error &&
-              error.code === 'ENOENT'
-            ))
-              throw error;
-          }
-          if (remaining.length) throw new Error(); // Never replace a partial or independently created checkout.
-          await clone();
-        }
+        await clone();
       } else {
-        const remote = await execute(
-          'git',
-          ['-C', companyDirectory, 'remote', 'get-url', 'origin'],
-          { timeout: 5000, maxBuffer: 4096, env },
-        );
-        if (remote.stdout.trim() !== repo) invalid();
+        if (access.profileDirectory)
+          await execute('git', ['ls-remote', '--exit-code', repo, 'HEAD'], {
+            env: { ...gitEnv, GIT_TERMINAL_PROMPT: '0' },
+            timeout: 30000,
+            maxBuffer: 4096,
+          });
       }
+      if (access.profileDirectory)
+        await bindGitHubProfile(
+          companyDirectory,
+          access.profileDirectory,
+          gitEnv,
+        );
+    } else if (values['github-token-file'] || values['github-auth']) {
+      invalid();
     }
     let marker: { id: string; name: string } | undefined;
     try {
@@ -318,9 +365,12 @@ export async function runInitCli(
           input: process.stdin,
           output: process.stdout,
         });
+      notice(
+        'Separate connection: Codex / ChatGPT model access. This uses your model account/workspace permissions; it does not join a GitHub organization or grant repository access. Device code is the remote-terminal sign-in method, not a permission scope. Codex workspace tool permissions remain separate.\n',
+      );
       if (
         /^(?:y|yes)$/i.test(
-          await ask('Use Codex provider-owned sign-in now?', 'yes'),
+          await ask('Use Codex / ChatGPT provider-owned sign-in now?', 'yes'),
         )
       ) {
         await login('codex', ['login', '--device-auth']);
@@ -344,7 +394,7 @@ export async function runInitCli(
     return {
       stdout: '',
       stderr:
-        'MZ init could not finish. Check private local paths, existing company files and Git access. Existing knowledge/settings are preserved; partial new shell files may remain and can be inspected before rerunning. For a private remote, establish Git credentials with your normal Git/GitHub login; MZ never asks you to paste a key. Run mz init --help.\n',
+        'MZ init could not finish. Check private local paths, existing company files and Git access. Existing knowledge/settings are preserved; partial new shell files may remain and can be inspected before rerunning. For GitHub, use a fine-grained token in the hidden credential field or --github-token-file (protected file); choose broader OAuth explicitly if intended. Never put a token in command arguments or company conversation. Check repository selection/org approval and local GitHub profile access; optional write grants are not assumed. Run mz init --help.\n',
       exitCode: 1,
     };
   } finally {

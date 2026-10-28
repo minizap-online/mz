@@ -10,7 +10,7 @@ Use [getting started](docs/getting-started.md) for normal onboarding. The [test 
 
 ## First use
 
-After the devbox installation, run `mz init`, then `mz guide`, then `mz ask`. Init prepares a company shell and remembers local settings; guide and ask use your existing Codex login for owner conversations. No company context questions need to be answered in the development chat. See the [short getting-started guide](docs/getting-started.md).
+After the devbox installation, run `mz init`, then `mz guide`, then `mz ask`. Init prepares a company shell and remembers local settings; guide and ask use your existing Codex login for owner conversations. No company context questions need to be answered in the development chat. See the [short getting-started guide](docs/getting-started.md) and [scoped GitHub authentication](docs/github-setup.md).
 
 ## Local development
 

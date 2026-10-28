@@ -158,3 +158,6 @@ export type {
   LocalInstallation,
   InitializeLocalInstallationOptions,
 } from './installation.js';
+export { preparePrivateHostDirectory } from './private-host-directory.js';
+
+export { createDoctorHost } from './doctor-host.js';

@@ -1,3 +1,5 @@
+import { companyGitHubEnvironment } from './github-auth.js';
+import { createDoctorHost, loadCompanyRepository } from '@mz/core';
 import { isAbsolute } from 'node:path';
 import {
   parseSecretRef,
@@ -116,7 +118,14 @@ export async function runDoctorCli(
     };
   }
   try {
-    const report = await runDoctor(options);
+    let host;
+    if (options.githubAuth) {
+      const company = await loadCompanyRepository(options.company ?? {});
+      host = createDoctorHost(
+        await companyGitHubEnvironment(company.root, process.env),
+      );
+    }
+    const report = await runDoctor(options, host);
     return {
       stdout: json ? JSON.stringify(report) + '\n' : render(report),
       stderr: '',
