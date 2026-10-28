@@ -28,7 +28,7 @@ test('init selects a scoped token before cloning and reuses only a profile refer
   await writeFile(
     join(bin, 'gh'),
     prefix +
-      `if(args[0]==='--version')process.exit(0);if(args[0]==='auth'&&args.includes('--with-token')){let chunks=[];for await(const c of process.stdin)chunks.push(c);fs.writeFileSync(path.join(root,'auth.json'),JSON.stringify({args,input:Buffer.concat(chunks).toString(),profile:process.env.GH_CONFIG_DIR}));process.exit(0);}if(args[0]==='api'){if(args.includes('--silent'))fs.writeFileSync(path.join(root,'doctor-profile.txt'),process.env.GH_CONFIG_DIR??'missing');console.log('sample-member');process.exit(0);}process.exit(9);`,
+      `if(args[0]==='--version')process.exit(0);if(args[0]==='auth'&&args.includes('--with-token')){let chunks=[];for await(const c of process.stdin)chunks.push(c);fs.writeFileSync(path.join(root,'auth.json'),JSON.stringify({args,input:Buffer.concat(chunks).toString(),profile:process.env.GH_CONFIG_DIR}));fs.writeFileSync(path.join(process.env.GH_CONFIG_DIR,'hosts.yml'),'{}',{mode:384});process.exit(0);}if(args[0]==='api'){if(args.includes('--silent'))fs.writeFileSync(path.join(root,'doctor-profile.txt'),process.env.GH_CONFIG_DIR??'missing');console.log('sample-member');process.exit(0);}process.exit(9);`,
     { mode: 0o700 },
   );
   await writeFile(

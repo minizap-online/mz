@@ -32,7 +32,7 @@ test('interactive init delegates authentication to provider-owned commands inste
   await writeFile(
     join(bin, 'gh'),
     prefix +
-      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'github-auth'),'provider owns authentication');process.exit(0);}if(args[0]==='auth'&&args[1]==='setup-git')process.exit(0);if(args[0]==='api'){console.log('sample-member');process.exit(0);}process.exit(9);`,
+      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'github-auth'),'provider owns authentication');fs.writeFileSync(path.join(process.env.GH_CONFIG_DIR,'hosts.yml'),'{}',{mode:384});process.exit(0);}if(args[0]==='auth'&&args[1]==='setup-git')process.exit(0);if(args[0]==='api'){console.log('sample-member');process.exit(0);}process.exit(9);`,
     { mode: 0o700 },
   );
   const prompts = [];
@@ -81,7 +81,7 @@ test('SSH repository authentication selects SSH key setup and preserves the sele
   await writeFile(
     join(bin, 'gh'),
     prefix +
-      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'auth.json'),JSON.stringify(args));process.exit(0);}if(args[0]==='api'){console.log('sample-member');process.exit(0);}process.exit(9);`,
+      `if(args[0]==='auth'&&args[1]==='login'){fs.writeFileSync(path.join(root,'auth.json'),JSON.stringify(args));fs.writeFileSync(path.join(process.env.GH_CONFIG_DIR,'hosts.yml'),'{}',{mode:384});process.exit(0);}if(args[0]==='api'){console.log('sample-member');process.exit(0);}process.exit(9);`,
     { mode: 0o700 },
   );
   await writeFile(

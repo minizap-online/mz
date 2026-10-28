@@ -87,12 +87,17 @@ async function probe(args: string[], env: NodeJS.ProcessEnv): Promise<boolean> {
     return false;
   }
 }
+interface InitTerminal {
+  question(prompt: string): Promise<string>;
+  close(): void;
+}
 export interface InitHost {
   env?: NodeJS.ProcessEnv;
   terminal?: boolean;
   question?: (label: string, fallback: string) => Promise<string>;
   notice?: (text: string) => void;
   readSecret?: () => Promise<Buffer>;
+  createTerminal?: () => InitTerminal;
 }
 async function nativeLogin(
   command: string,
@@ -181,20 +186,20 @@ export async function runInitCli(
       exitCode: 2,
     };
   }
-  let terminal: ReturnType<typeof createInterface> | undefined;
+  let terminal: InitTerminal | undefined;
+  const openTerminal = (): InitTerminal =>
+    host.createTerminal?.() ??
+    createInterface({ input: process.stdin, output: process.stdout });
   try {
     const paths = installationPaths(env);
     const existing = await readLocalInstallation({
       configFile: paths.configFile,
     });
-    if (!yes && !existing && !host.question)
-      terminal = createInterface({
-        input: process.stdin,
-        output: process.stdout,
-      });
+    if (!yes && !existing && !host.question) terminal = openTerminal();
     const ask = async (label: string, fallback: string): Promise<string> => {
       if (host.question)
         return (await host.question(label, fallback)).trim() || fallback;
+      if (!terminal && !yes && interactive) terminal = openTerminal();
       if (!terminal) return fallback;
       return (
         (
@@ -212,11 +217,7 @@ export async function runInitCli(
       terminal?.close();
       terminal = undefined;
       await nativeLogin(command, args, loginEnv);
-      if (!yes && !host.question)
-        terminal = createInterface({
-          input: process.stdin,
-          output: process.stdout,
-        });
+      if (!yes && !host.question) terminal = openTerminal();
     };
     const notice =
       host.notice ??
@@ -232,11 +233,7 @@ export async function runInitCli(
           (() => hiddenSecret('Fine-grained GitHub token (hidden)'))
         )();
       } finally {
-        if (!yes && !host.question)
-          terminal = createInterface({
-            input: process.stdin,
-            output: process.stdout,
-          });
+        if (!yes && !host.question) terminal = openTerminal();
       }
     };
     const companyDirectory = resolve(
@@ -305,7 +302,7 @@ export async function runInitCli(
         await clone();
       } else {
         if (access.profileDirectory)
-          await execute('git', ['ls-remote', '--exit-code', repo, 'HEAD'], {
+          await execute('git', ['ls-remote', repo], {
             env: { ...gitEnv, GIT_TERMINAL_PROMPT: '0' },
             timeout: 30000,
             maxBuffer: 4096,
@@ -360,11 +357,7 @@ export async function runInitCli(
     const available = await probe(['--version'], env);
     let authenticated = available && (await probe(['login', 'status'], env));
     if (!yes && interactive && available && !authenticated) {
-      if (!terminal && !host.question)
-        terminal = createInterface({
-          input: process.stdin,
-          output: process.stdout,
-        });
+      if (!terminal && !host.question) terminal = openTerminal();
       notice(
         'Separate connection: Codex / ChatGPT model access. This uses your model account/workspace permissions; it does not join a GitHub organization or grant repository access. Device code is the remote-terminal sign-in method, not a permission scope. Codex workspace tool permissions remain separate.\n',
       );

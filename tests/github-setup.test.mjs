@@ -12,7 +12,7 @@ async function fixture(t) {
   const capture = join(root, 'capture.json');
   await writeFile(
     join(bin, 'gh'),
-    `#!${process.execPath}\nimport fs from 'node:fs';const args=process.argv.slice(2);if(args[0]==='auth'&&args.includes('--with-token')){let chunks=[];for await(const c of process.stdin)chunks.push(c);fs.writeFileSync(process.env.MZ_TEST_CAPTURE,JSON.stringify({args,input:Buffer.concat(chunks).toString(),profile:process.env.GH_CONFIG_DIR,tokenEnv:process.env.GH_TOKEN??null}));process.exit(0);}if(args[0]==='api'&&args.includes('user')){console.log('sample-member');process.exit(0);}process.exit(9);`,
+    `#!${process.execPath}\nimport fs from 'node:fs';const args=process.argv.slice(2);if(args[0]==='auth'&&args.includes('--with-token')){let chunks=[];for await(const c of process.stdin)chunks.push(c);fs.writeFileSync(process.env.MZ_TEST_CAPTURE,JSON.stringify({args,input:Buffer.concat(chunks).toString(),profile:process.env.GH_CONFIG_DIR,tokenEnv:process.env.GH_TOKEN??null,keyringBus:process.env.DBUS_SESSION_BUS_ADDRESS??null}));fs.writeFileSync(process.env.GH_CONFIG_DIR+'/hosts.yml','{}',{mode:384});process.exit(0);}if(args[0]==='api'&&args.includes('user')){console.log('sample-member');process.exit(0);}process.exit(9);`,
     { mode: 0o700 },
   );
   return {
@@ -21,6 +21,7 @@ async function fixture(t) {
       PATH: bin + ':' + process.env.PATH,
       MZ_CONFIG_FILE: join(root, 'config/mz/config.json'),
       MZ_TEST_CAPTURE: capture,
+      DBUS_SESSION_BUS_ADDRESS: 'unix:path=/synthetic-owner-codex-bus',
     },
     capture,
   };
@@ -51,6 +52,7 @@ test('token setup explains identity/scope before secret entry and delegates stdi
   assert.ok(call.args.includes('--with-token'));
   assert.ok(call.args.includes('--insecure-storage'));
   assert.equal(call.tokenEnv, null);
+  assert.equal(call.keyringBus, 'unix:path=/dev/null/mz-private-gh-no-keyring');
   assert.equal(call.input, 'github_pat_synthetic_owner_setup_token');
   assert.ok(token.every((byte) => byte === 0));
   assert.doesNotMatch(
@@ -62,6 +64,7 @@ test('token setup explains identity/scope before secret entry and delegates stdi
   const client = auth.githubClientEnvironment(f.env, result.profileDirectory);
   assert.equal(client.GH_CONFIG_DIR, result.profileDirectory);
   assert.equal(client.GH_TOKEN, undefined);
+  assert.equal(client.DBUS_SESSION_BUS_ADDRESS, f.env.DBUS_SESSION_BUS_ADDRESS);
   assert.doesNotMatch(JSON.stringify(client), /github_pat_synthetic/);
 });
 test('existing credentials never launch login and OAuth is not a default fallback', async (t) => {
@@ -125,6 +128,7 @@ test('real Git credential transport uses the MZ profile and removes an unrelated
     `#!${process.execPath}\nlet data='';for await(const value of process.stdin)data+=value;if(process.env.GH_CONFIG_DIR!==${JSON.stringify(profile)}||process.env.GH_TOKEN!==undefined||!data.includes('host=github.com'))process.exit(9);process.stdout.write('username=x-access-token\\npassword=github_pat_synthetic_transport_value\\n\\n');`,
     { mode: 0o700 },
   );
+  await writeFile(join(profile, 'hosts.yml'), '{}', { mode: 0o600 });
   await auth.bindGitHubProfile(company, profile, f.env);
   await auth.bindGitHubProfile(company, profile, f.env);
   const result = await new Promise((resolve, reject) => {

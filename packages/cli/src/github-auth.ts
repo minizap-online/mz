@@ -1,6 +1,11 @@
+import {
+  preparePrivateGitHubClient,
+  checkPrivateGitHubClient,
+  NO_GITHUB_KEYRING,
+} from './github-client.js';
 import { lstat } from 'node:fs/promises';
 import { execFile, spawn } from 'node:child_process';
-import { dirname, basename, join, resolve } from 'node:path';
+import { dirname, basename, join, resolve, delimiter } from 'node:path';
 import { promisify } from 'node:util';
 import {
   createHostFileSecretProvider,
@@ -91,6 +96,7 @@ export function githubClientEnvironment(
   profile: string,
 ): NodeJS.ProcessEnv {
   const scoped = profileEnvironment(env, profile);
+  scoped.PATH = join(profile, 'bin') + delimiter + (env.PATH ?? '');
   const count = Number(env['GIT_CONFIG_COUNT'] ?? '0');
   if (!Number.isSafeInteger(count) || count < 0 || count > 32)
     throw new Error();
@@ -98,7 +104,9 @@ export function githubClientEnvironment(
     ['credential.https://github.com.helper', ''],
     [
       'credential.https://github.com.helper',
-      '!env -u GH_TOKEN -u GITHUB_TOKEN -u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN -u GH_DEBUG GH_CONFIG_DIR=' +
+      '!env -u GH_TOKEN -u GITHUB_TOKEN -u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN -u GH_DEBUG DBUS_SESSION_BUS_ADDRESS=' +
+        quote(NO_GITHUB_KEYRING) +
+        ' GH_CONFIG_DIR=' +
         quote(profile) +
         ' GH_HOST=github.com gh auth git-credential',
     ],
@@ -111,14 +119,24 @@ export function githubClientEnvironment(
   scoped['GIT_CONFIG_COUNT'] = String(count + entries.length);
   return scoped;
 }
-async function checkNativeProfileFiles(profile: string): Promise<void> {
+async function checkNativeProfileFiles(
+  profile: string,
+  requireCredential = false,
+): Promise<void> {
   for (const name of ['hosts.yml', 'config.yml']) {
     let stat;
     try {
       stat = await lstat(join(profile, name));
     } catch (error) {
-      if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'ENOENT'
+      ) {
+        // eslint-disable-next-line preserve-caught-error -- Do not expose private credential-store paths.
+        if (name === 'hosts.yml' && requireCredential) throw new Error();
         continue;
+      }
       // eslint-disable-next-line preserve-caught-error -- Credential-store paths are private; expose a static boundary failure.
       throw new Error();
     }
@@ -195,7 +213,12 @@ export async function prepareGitHubAccess(
     [resolve(options.companyDirectory)],
   );
   await checkNativeProfileFiles(profileDirectory);
-  const env = profileEnvironment(options.env, profileDirectory);
+  await preparePrivateGitHubClient(
+    profileDirectory,
+    resolve(options.companyDirectory),
+    options.env,
+  );
+  const env = githubClientEnvironment(options.env, profileDirectory);
   if (method === 'oauth') {
     if (!options.interactive || !options.login) throw new Error();
     await options.login(
@@ -262,7 +285,7 @@ export async function prepareGitHubAccess(
       );
     }
   }
-  await checkNativeProfileFiles(profileDirectory);
+  await checkNativeProfileFiles(profileDirectory, true);
   const result = await execute(
     'gh',
     ['api', '--hostname', 'github.com', 'user', '--jq', '.login'],
@@ -280,11 +303,14 @@ export async function bindGitHubProfile(
   profile: string,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
+  await preparePrivateGitHubClient(profile, companyDirectory, env);
   const entries = [
     ['credential.https://github.com.helper', ''],
     [
       'credential.https://github.com.helper',
-      '!env -u GH_TOKEN -u GITHUB_TOKEN -u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN -u GH_DEBUG GH_CONFIG_DIR=' +
+      '!env -u GH_TOKEN -u GITHUB_TOKEN -u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN -u GH_DEBUG DBUS_SESSION_BUS_ADDRESS=' +
+        quote(NO_GITHUB_KEYRING) +
+        ' GH_CONFIG_DIR=' +
         quote(profile) +
         ' GH_HOST=github.com gh auth git-credential',
     ],
@@ -313,44 +339,67 @@ export async function companyGitHubEnvironment(
   companyDirectory: string,
   env: NodeJS.ProcessEnv,
 ): Promise<NodeJS.ProcessEnv> {
-  let profile: string;
-  try {
-    const result = await execute(
-      'git',
-      [
-        '-C',
-        companyDirectory,
-        'config',
-        '--local',
-        '--get',
-        'mz.github.profile',
-      ],
-      { env, timeout: 5000, maxBuffer: 4096 },
-    );
-    profile = result.stdout.trim();
-  } catch (error) {
+  const exists = async (path: string): Promise<boolean> => {
+    try {
+      await lstat(path);
+      return true;
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
+        return false;
+      throw error;
+    }
+  };
+  let root = resolve(companyDirectory),
+    repository = false;
+  while (true) {
     if (
-      error !== null &&
-      typeof error === 'object' &&
-      'code' in error &&
-      [1, 128].includes(Number(error.code))
-    )
-      return env;
-    // eslint-disable-next-line preserve-caught-error -- Native command output/paths are private; expose a static boundary failure.
-    throw new Error();
+      (await exists(join(root, '.git'))) ||
+      ((await exists(join(root, 'HEAD'))) &&
+        (await exists(join(root, 'objects'))) &&
+        (await exists(join(root, 'refs'))))
+    ) {
+      repository = true;
+      break;
+    }
+    const parent = dirname(root);
+    if (parent === root) break;
+    root = parent;
   }
+  if (!repository) return env;
+  const read = async (key: string): Promise<string | undefined> => {
+    try {
+      return (
+        await execute(
+          'git',
+          ['-C', companyDirectory, 'config', '--local', '--get', key],
+          { env, timeout: 5000, maxBuffer: 4096 },
+        )
+      ).stdout.trim();
+    } catch (error) {
+      if (
+        error !== null &&
+        typeof error === 'object' &&
+        'code' in error &&
+        Number(error.code) === 1
+      )
+        return undefined;
+      // eslint-disable-next-line preserve-caught-error -- Git config paths/output are private; do not attach a cause.
+      throw new Error();
+    }
+  };
+  const [profile, version] = await Promise.all([
+    read('mz.github.profile'),
+    read('mz.github.version'),
+  ]);
+  if (profile === undefined && version === undefined) return env;
+  if (profile === undefined || version !== '1') throw new Error();
   const expected = join(
     dirname(resolve(installationPaths(env).configFile)),
     'github',
   );
   if (profile !== expected) throw new Error();
   await preparePrivateHostDirectory(profile, [companyDirectory], false);
-  await checkNativeProfileFiles(profile);
-  const version = await execute(
-    'git',
-    ['-C', companyDirectory, 'config', '--local', '--get', 'mz.github.version'],
-    { env, timeout: 5000, maxBuffer: 1024 },
-  );
-  if (version.stdout.trim() !== '1') throw new Error();
+  await checkNativeProfileFiles(profile, true);
+  await checkPrivateGitHubClient(profile, companyDirectory);
   return githubClientEnvironment(env, profile);
 }

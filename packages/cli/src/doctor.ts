@@ -1,5 +1,9 @@
 import { companyGitHubEnvironment } from './github-auth.js';
-import { createDoctorHost, loadCompanyRepository } from '@mz/core';
+import {
+  createDoctorHost,
+  loadCompanyRepository,
+  type DoctorHost,
+} from '@mz/core';
 import { isAbsolute } from 'node:path';
 import {
   parseSecretRef,
@@ -118,12 +122,23 @@ export async function runDoctorCli(
     };
   }
   try {
-    let host;
+    let host: DoctorHost | undefined;
     if (options.githubAuth) {
-      const company = await loadCompanyRepository(options.company ?? {});
-      host = createDoctorHost(
-        await companyGitHubEnvironment(company.root, process.env),
-      );
+      try {
+        const company = await loadCompanyRepository(options.company ?? {});
+        host = createDoctorHost(
+          await companyGitHubEnvironment(company.root, process.env),
+        );
+      } catch {
+        const base = createDoctorHost();
+        host = {
+          nodeVersion: base.nodeVersion,
+          probeCommand: (command, args) =>
+            command === 'gh' && args.includes('api')
+              ? Promise.resolve({ ok: false, stdout: '' })
+              : base.probeCommand(command, args),
+        };
+      }
     }
     const report = await runDoctor(options, host);
     return {
