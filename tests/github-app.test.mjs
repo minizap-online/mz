@@ -166,6 +166,24 @@ const deliveryPermissions = {
   checks: 'write',
   statuses: 'write',
 };
+test('collaboration token permits reading code and coordinating issues without sibling code writes', async () => {
+  const f = fixture();
+  await f
+    .make()
+    .withRepositoryToken('website', async () => true, 'collaboration');
+  const request = f.calls
+    .filter((c) => c.path.endsWith('/access_tokens') && c.body.repository_ids)
+    .at(-1);
+  assert.deepEqual(request.body, {
+    repository_ids: [11],
+    permissions: {
+      metadata: 'read',
+      contents: 'read',
+      issues: 'write',
+      pull_requests: 'read',
+    },
+  });
+});
 test('delivery tokens have full delivery permissions for exactly one repository and renew per operation', async () => {
   const expanded = { ...permissions, ...deliveryPermissions };
   const f = fixture({

@@ -5,8 +5,10 @@ import { lstat, mkdir, open, readdir, realpath } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { installationPaths, readLocalInstallation } from '@mz/core';
 import { GitHubAppError, type AppRequest } from '@mz/github';
-import { appDirectory, loadAppConnection } from './github-app-store.js';
+import { loadAppConnection } from './github-app-store.js';
 import { appGitEnvironment, prepareAppClient } from './github-app-transport.js';
+import { relatedRepositories } from './project-access.js';
+import { projectActivation } from './project-activation.js';
 import type { CliResult } from './cli.js';
 
 const execute = promisify(execFile);
@@ -75,18 +77,32 @@ export async function runProjectCheckout(
   host: { env?: NodeJS.ProcessEnv; request?: AppRequest } = {},
 ): Promise<CliResult> {
   const [name, input, ...flags] = args;
+  const selectedFlags: string[] = [];
+  const relatedNames: string[] = [];
+  let badFlags = false;
+  for (let i = 0; i < flags.length; i++) {
+    const flag = flags[i]!;
+    if (flag === '--related') {
+      const related = flags[++i];
+      if (!related || !/^[a-z][a-z0-9-]{0,63}$/.test(related)) badFlags = true;
+      else relatedNames.push(related);
+    } else selectedFlags.push(flag);
+  }
   if (
     !name ||
     !/^[a-z][a-z0-9-]{0,63}$/.test(name) ||
     !input ||
     input.startsWith('-') ||
-    new Set(flags).size !== flags.length ||
-    flags.some((flag) => flag !== '--delivery' && flag !== '--json')
+    badFlags ||
+    relatedNames.length > 8 ||
+    new Set(relatedNames).size !== relatedNames.length ||
+    new Set(selectedFlags).size !== selectedFlags.length ||
+    selectedFlags.some((flag) => flag !== '--delivery' && flag !== '--json')
   )
     return {
       stdout: '',
       stderr:
-        'Usage: mz project checkout NAME DIRECTORY [--delivery] [--json]\n',
+        'Usage: mz project checkout NAME DIRECTORY [--delivery] [--related NAME] [--json]\n',
       exitCode: 2,
     };
   const profile = flags.includes('--delivery') ? 'delivery' : 'development';
@@ -107,6 +123,15 @@ export async function runProjectCheckout(
       throw new GitHubAppError('DELIVERY_UNAVAILABLE');
     await saved.app.getRepository(name);
     const repository = saved.connection.organization + '/' + name;
+    const related = relatedRepositories(
+      relatedNames
+        .map((value) => saved.connection.organization + '/' + value)
+        .join(','),
+      saved.connection.organization,
+      repository,
+    );
+    for (const sibling of related)
+      await saved.app.getRepository(sibling.split('/')[1]!);
     const url = 'https://github.com/' + repository + '.git';
     const directory = resolve(input);
     if (
@@ -121,6 +146,7 @@ export async function runProjectCheckout(
       ...env,
       MZ_GITHUB_REPOSITORY: repository,
       MZ_GITHUB_PERMISSION_PROFILE: profile,
+      MZ_GITHUB_RELATED_REPOSITORIES: related.join(',') || undefined,
     };
     delete selected.GIT_CONFIG_COUNT;
     delete selected.GIT_CONFIG_PARAMETERS;
@@ -217,19 +243,52 @@ export async function runProjectCheckout(
           'credential.https://github.com.helper',
         ])
       ).split('\n');
-      // A repeat can change only the two explicitly selected MZ profiles.
-      const alternate = helper.replace(
-        "MZ_GITHUB_PERMISSION_PROFILE='" + profile + "'",
-        "MZ_GITHUB_PERMISSION_PROFILE='" +
-          (profile === 'delivery' ? 'development' : 'delivery') +
-          "'",
-      );
-      if (
-        values.some(
-          (value) => value !== '' && value !== helper && value !== alternate,
-        )
-      )
+      const managedHelpers = new Set<string>();
+      for (const mode of ['development', 'delivery'] as const) {
+        for (const siblings of [related, []]) {
+          const candidate = appGitEnvironment(settings.companyDirectory, {
+            ...selected,
+            MZ_GITHUB_PERMISSION_PROFILE: mode,
+            MZ_GITHUB_RELATED_REPOSITORIES: siblings.join(',') || undefined,
+          });
+          managedHelpers.add(candidate['GIT_CONFIG_VALUE_1']!);
+        }
+      }
+      if (values.some((value) => value !== '' && !managedHelpers.has(value)))
         throw new Error();
+    }
+    const local = join(directory, '.mz');
+    await directDirectory(local);
+    const activation = projectActivation({
+      companyDirectory: settings.companyDirectory,
+      env,
+      repository,
+      profile,
+      related,
+    });
+    const activateFile = join(local, 'activate');
+    const previousActivation = (await exists(activateFile))
+      ? await safeText(activateFile)
+      : null;
+    if (previousActivation !== null) {
+      const old = previousActivation;
+      const managedActivations = new Set<string>();
+      for (const mode of ['development', 'delivery'] as const) {
+        for (const siblings of [related, []]) {
+          for (const legacy of [false, true])
+            managedActivations.add(
+              projectActivation({
+                companyDirectory: settings.companyDirectory,
+                env,
+                repository,
+                profile: mode,
+                related: siblings,
+                legacy,
+              }),
+            );
+        }
+      }
+      if (!managedActivations.has(old)) throw new Error();
     }
     await git([
       '-C',
@@ -279,41 +338,8 @@ export async function runProjectCheckout(
       }
       await git(['-C', directory, 'config', '--local', key!, value]);
     }
-    const local = join(directory, '.mz');
-    await directDirectory(local);
-    const activation =
-      '# MZ project environment; no credentials stored here.\n' +
-      'unset GH_TOKEN GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN GH_DEBUG\n' +
-      'unset GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS\n' +
-      'export GIT_CONFIG_GLOBAL=/dev/null\nexport GIT_CONFIG_NOSYSTEM=1\n' +
-      'export MZ_CONFIG_FILE=' +
-      quote(resolve(installationPaths(env).configFile)) +
-      '\n' +
-      'export MZ_GITHUB_APP_COMPANY=' +
-      quote(settings.companyDirectory) +
-      '\n' +
-      'export MZ_GITHUB_REPOSITORY=' +
-      quote(repository) +
-      '\n' +
-      'export GH_REPO=' +
-      quote(repository) +
-      '\n' +
-      'export MZ_GITHUB_PERMISSION_PROFILE=' +
-      quote(profile) +
-      '\n' +
-      'export PATH=' +
-      quote(join(appDirectory(env), 'bin')) +
-      ':"$PATH"\n';
-    const activateFile = join(local, 'activate');
-    if (await exists(activateFile)) {
-      const old = await safeText(activateFile);
-      const alternate = activation.replace(
-        "MZ_GITHUB_PERMISSION_PROFILE='" + profile + "'",
-        "MZ_GITHUB_PERMISSION_PROFILE='" +
-          (profile === 'delivery' ? 'development' : 'delivery') +
-          "'",
-      );
-      if (old !== activation && old !== alternate) throw new Error();
+    if (previousActivation !== null) {
+      const old = previousActivation;
       if (old !== activation) {
         const file = await open(
           activateFile,
@@ -342,6 +368,18 @@ export async function runProjectCheckout(
       '/... endpoints; gh api does not support --repo. Use the MZ project environment for renewable repository credentials; never print credentials or put them in .env, Git, logs or tickets. GitHub Projects are steward-managed organization resources. Deployment needs separately provisioned target credentials.\n\n' +
       'Use existing relevant checks and report what actually ran. Do not claim deployment, successful checks or steward actions without evidence.\n';
     await createText(join(local, 'HANDOFF.md'), instructions);
+    if (related.length)
+      await createText(
+        join(local, 'COLLABORATION.md'),
+        '# Related project collaboration\n\nPrimary repository: ' +
+          repository +
+          '\nRelated repositories:\n' +
+          related.map((value) => '- ' + value).join('\n') +
+          '\n\n' +
+          'The active session has delivery authority only in its primary repository. Related repositories allow code and pull-request reading plus issue coordination. Do not patch sibling code, workflows, settings or secrets.\n\n' +
+          'Coordinate through linked GitHub issues. A requesting project opens a ticket in the producing project with requirements, formats, inputs and acceptance criteria. The producing project links versioned output or artifacts and verification back to the request. The requesting project integrates the result and owns its pull request. Automatic generation and producer-authored cross-repository PRs are not configured.\n\n' +
+          'Use explicit --repo targets where supported, and explicit repos/OWNER/REPO/... endpoints for gh api. Re-source the activation in a fresh shell after changing relationships. Local filesystem read access and runtime workflow credentials are separate from GitHub API grants.\n',
+      );
     await createText(join(directory, 'AGENTS.md'), instructions);
     const exclude = resolve(
       directory,
@@ -366,12 +404,15 @@ export async function runProjectCheckout(
     }
     const result = {
       repository,
+      relatedRepositories: related,
       directory,
       profile,
       deliveryReady: access.deliveryReady,
       activate: 'cd ' + quote(directory) + ' && source .mz/activate',
       start:
-        "codex 'Read AGENTS.md and .mz/HANDOFF.md, then help me plan the project through GitHub tickets.'",
+        "codex 'Read AGENTS.md and .mz/HANDOFF.md" +
+        (related.length ? ' and .mz/COLLABORATION.md' : '') +
+        ", then help me plan the project through GitHub tickets.'",
       development: 'ready-for-owner-prompt',
       deployment: 'not-configured',
     };
@@ -384,6 +425,11 @@ export async function runProjectCheckout(
           directory +
           '.\n' +
           'Ticket workflow: GitHub Issues, milestones and verification.\n' +
+          (related.length
+            ? 'Related repositories (code read and issue coordination): ' +
+              related.join(', ') +
+              '.\n'
+            : '') +
           (profile === 'delivery'
             ? 'Delivery credentials are enabled.\n'
             : 'Development credentials are enabled. For workflows and deployment setup, use --delivery.\n') +

@@ -9,6 +9,7 @@ import { installationPaths, readLocalInstallation } from '@mz/core';
 import { appDirectory, loadAppConnection } from './github-app-store.js';
 import { deliveryAppPermissions } from '@mz/github';
 import { formatGitHubPermissions } from './github-app-output.js';
+import { apiRepository, repositoryProfile } from './project-access.js';
 import type { CliResult } from './cli.js';
 const execute = promisify(execFile);
 const quote = (s: string): string => "'" + s.replaceAll("'", "'\\''") + "'";
@@ -46,6 +47,10 @@ export function appGitEnvironment(
     (env['MZ_GITHUB_PERMISSION_PROFILE']
       ? ' MZ_GITHUB_PERMISSION_PROFILE=' +
         quote(env['MZ_GITHUB_PERMISSION_PROFILE'])
+      : '') +
+    (env['MZ_GITHUB_RELATED_REPOSITORIES']
+      ? ' MZ_GITHUB_RELATED_REPOSITORIES=' +
+        quote(env['MZ_GITHUB_RELATED_REPOSITORIES'])
       : '') +
     ' ' +
     quote(process.execPath) +
@@ -190,12 +195,10 @@ export async function runGitHubAppCli(
       let target =
         explicit >= 0
           ? nativeArgs[explicit + 1]
-          : (inline ?? env['MZ_GITHUB_REPOSITORY'] ?? env['GH_REPO']);
-      if (
-        env['MZ_GITHUB_REPOSITORY'] &&
-        target?.toLowerCase() !== env['MZ_GITHUB_REPOSITORY'].toLowerCase()
-      )
-        return failure;
+          : (inline ??
+            apiRepository(nativeArgs) ??
+            env['MZ_GITHUB_REPOSITORY'] ??
+            env['GH_REPO']);
       if (!target) {
         const remote = await execute('git', ['remote', 'get-url', 'origin'], {
           cwd: process.cwd(),
@@ -233,9 +236,7 @@ export async function runGitHubAppCli(
             child.once('error', reject);
             child.once('exit', (code) => resolve(code ?? 1));
           }),
-        env['MZ_GITHUB_PERMISSION_PROFILE'] === 'delivery'
-          ? 'delivery'
-          : 'development',
+        repositoryProfile(env, saved.connection.organization, target!),
       );
       return { stdout: '', stderr: '', exitCode: code };
     }
@@ -307,12 +308,6 @@ export async function runGitHubAppCli(
         throw new Error();
       const parts = data['path'].replace(/\.git$/, '').split('/');
       if (
-        env['MZ_GITHUB_REPOSITORY'] &&
-        parts.join('/').toLowerCase() !==
-          env['MZ_GITHUB_REPOSITORY'].toLowerCase()
-      )
-        throw new Error();
-      if (
         parts.length !== 2 ||
         parts[0]!.toLowerCase() !== saved.connection.organization.toLowerCase()
       )
@@ -324,9 +319,7 @@ export async function runGitHubAppCli(
           stderr: '',
           exitCode: 0,
         }),
-        env['MZ_GITHUB_PERMISSION_PROFILE'] === 'delivery'
-          ? 'delivery'
-          : 'development',
+        repositoryProfile(env, saved.connection.organization, parts.join('/')),
       );
     }
     return {

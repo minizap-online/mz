@@ -21,6 +21,7 @@ See [workflow](../workflow.md), [milestones](../milestones.md) and [template](..
 | [FR-015](FR-015.md)   | Organization-owned GitHub App and protected owner access | [M-05](../milestones.md#m-05) | None               |
 | [FR-016](FR-016.md)   | Conversational project repair and onboarding             | [M-05](../milestones.md#m-05) | None               |
 | [FR-017](FR-017.md)   | Prepared checkouts and repository delivery credentials   | [M-05](../milestones.md#m-05) | None               |
+| [FR-018](FR-018.md)   | Related-project code reading and issue coordination      | [M-05](../milestones.md#m-05) | None               |
 | [CR-001](CR-001.md)   | Ticket workflow and organization target                  | [M-00](../milestones.md#m-00) | None               |
 | [CR-002](CR-002.md)   | GitHub work authority and runtime boundary               | [M-00](../milestones.md#m-00) | None               |
 | [CR-003](CR-003.md)   | MIT attribution to expeter                               | [M-00](../milestones.md#m-00) | None               |

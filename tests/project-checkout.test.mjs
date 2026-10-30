@@ -14,7 +14,7 @@ const execute = promisify(execFile);
 const key = generateKeyPairSync('rsa', {
   modulusLength: 2048,
 }).privateKey.export({ type: 'pkcs8', format: 'pem' });
-async function fixture(t) {
+async function fixture(t, delivery = false) {
   const root = await mkdtemp(join(tmpdir(), 'mz-checkout-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const settings = await initializeLocalInstallation({
@@ -45,6 +45,20 @@ async function fixture(t) {
     repository_creation: 'write',
     organization_projects: 'write',
     members: 'read',
+    ...(delivery
+      ? {
+          actions: 'write',
+          workflows: 'write',
+          administration: 'write',
+          environments: 'write',
+          deployments: 'write',
+          pages: 'write',
+          secrets: 'write',
+          actions_variables: 'write',
+          checks: 'write',
+          statuses: 'write',
+        }
+      : {}),
   };
   const request = async (method, path, body) => {
     if (path === '/app')
@@ -69,6 +83,8 @@ async function fixture(t) {
       };
     if (path.endsWith('/memberships/human'))
       return { state: 'active', role: 'admin', user: { id: 10 } };
+    if (path === '/repos/sample-org/generator')
+      return { id: 12, name: 'generator', owner: { id: 9 }, private: true };
     if (path === '/repos/sample-org/game')
       return { id: 11, name: 'game', owner: { id: 9 }, private: true };
     throw Error('Unexpected fixture route');
@@ -352,4 +368,195 @@ test('project native clients reject cross-project requests and use renewed App t
     ).exitCode,
     1,
   );
+});
+test('explicit related repositories get collaboration credentials and session Git keeps the primary scope', async (t) => {
+  const f = await fixture(t, true);
+  assert.equal(
+    (await runProjectCli(['checkout', 'game', f.directory, '--delivery'], f))
+      .exitCode,
+    0,
+  );
+  const current = await readFile(join(f.directory, '.mz/activate'), 'utf8');
+  const marker = 'unset MZ_GITHUB_RELATED_REPOSITORIES\n';
+  assert.ok(current.includes(marker));
+  await writeFile(
+    join(f.directory, '.mz/activate'),
+    current.slice(0, current.indexOf(marker)),
+  );
+  const result = await runProjectCli(
+    [
+      'checkout',
+      'game',
+      f.directory,
+      '--delivery',
+      '--related',
+      'generator',
+      '--json',
+    ],
+    f,
+  );
+  assert.equal(result.exitCode, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).relatedRepositories, [
+    'sample-org/generator',
+  ]);
+  const original = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = original;
+  });
+  const tokenRequests = [];
+  globalThis.fetch = async (url, options) => {
+    const path = new URL(url).pathname;
+    const body = options.body ? JSON.parse(options.body) : undefined;
+    if (path.endsWith('/access_tokens') && body.repository_ids)
+      tokenRequests.push(body);
+    return new Response(
+      JSON.stringify(await f.request(options.method, path, body)),
+      { status: 200 },
+    );
+  };
+  const env = {
+    ...f.env,
+    MZ_GITHUB_REPOSITORY: 'sample-org/game',
+    MZ_GITHUB_RELATED_REPOSITORIES: 'sample-org/generator',
+    MZ_GITHUB_PERMISSION_PROFILE: 'delivery',
+  };
+  const credentials = await runGitHubAppCli(
+    ['credential', 'get'],
+    env,
+    'protocol=https\nhost=github.com\npath=sample-org/generator.git\n\n',
+  );
+  assert.match(credentials.stdout, /password=ghs_synthetic/);
+  assert.deepEqual(tokenRequests.at(-1), {
+    repository_ids: [12],
+    permissions: {
+      metadata: 'read',
+      contents: 'read',
+      issues: 'write',
+      pull_requests: 'read',
+    },
+  });
+  assert.equal(
+    (
+      await runGitHubAppCli(
+        [
+          'gh',
+          join(f.root, 'bin/gh'),
+          'issue',
+          'list',
+          '--repo',
+          'sample-org/generator',
+        ],
+        env,
+      )
+    ).exitCode,
+    0,
+  );
+  assert.equal(
+    (
+      await runGitHubAppCli(
+        [
+          'gh',
+          join(f.root, 'bin/gh'),
+          'api',
+          'repos/sample-org/generator/issues',
+        ],
+        env,
+      )
+    ).exitCode,
+    0,
+  );
+  assert.equal(
+    (
+      await runGitHubAppCli(
+        [
+          'gh',
+          join(f.root, 'bin/gh'),
+          'issue',
+          'list',
+          '--repo',
+          'sample-org/unrelated',
+        ],
+        env,
+      )
+    ).exitCode,
+    1,
+  );
+  const siblingDirectory = join(f.root, 'generator');
+  assert.equal(
+    (
+      await runProjectCli(
+        [
+          'checkout',
+          'generator',
+          siblingDirectory,
+          '--delivery',
+          '--related',
+          'game',
+        ],
+        f,
+      )
+    ).exitCode,
+    0,
+  );
+  const session = await execute(
+    '/bin/bash',
+    [
+      '-c',
+      'source "$1"; git -C "$2" config --get credential.https://github.com.helper',
+      'bash',
+      join(f.directory, '.mz/activate'),
+      siblingDirectory,
+    ],
+    { env: f.env },
+  );
+  assert.match(session.stdout, /MZ_GITHUB_REPOSITORY='sample-org\/game'/);
+  assert.match(
+    session.stdout,
+    /MZ_GITHUB_RELATED_REPOSITORIES='sample-org\/generator'/,
+  );
+});
+test('rejected hand-edited activation does not change the existing credential helper', async (t) => {
+  const f = await fixture(t);
+  assert.equal(
+    (await runProjectCli(['checkout', 'game', f.directory], f)).exitCode,
+    0,
+  );
+  const before = (
+    await execute('/usr/bin/git', [
+      '-C',
+      f.directory,
+      'config',
+      '--local',
+      '--get-all',
+      'credential.https://github.com.helper',
+    ])
+  ).stdout;
+  const activation = join(f.directory, '.mz/activate');
+  await writeFile(
+    activation,
+    (await readFile(activation, 'utf8')) + '# owner customization\n',
+  );
+  assert.equal(
+    (
+      await runProjectCli(
+        ['checkout', 'game', f.directory, '--related', 'generator'],
+        f,
+      )
+    ).exitCode,
+    1,
+  );
+  assert.equal(
+    (
+      await execute('/usr/bin/git', [
+        '-C',
+        f.directory,
+        'config',
+        '--local',
+        '--get-all',
+        'credential.https://github.com.helper',
+      ])
+    ).stdout,
+    before,
+  );
+  assert.match(await readFile(activation, 'utf8'), /# owner customization/);
 });

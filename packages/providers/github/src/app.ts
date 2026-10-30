@@ -185,9 +185,9 @@ export function createGitHubApp(options: {
     async withRepositoryToken<T>(
       name: string,
       use: (token: string) => Promise<T>,
-      profile: 'development' | 'delivery' = 'development',
+      profile: 'development' | 'delivery' | 'collaboration' = 'development',
     ): Promise<T> {
-      if (!['development', 'delivery'].includes(profile))
+      if (!['development', 'delivery', 'collaboration'].includes(profile))
         throw new GitHubAppError();
       const granted = profile === 'delivery' ? await verify() : null;
       if (
@@ -208,12 +208,19 @@ export function createGitHubApp(options: {
                 ),
               ),
             }
-          : {
-              metadata: 'read',
-              contents: 'write',
-              issues: 'write',
-              pull_requests: 'write',
-            },
+          : profile === 'collaboration'
+            ? {
+                metadata: 'read',
+                contents: 'read',
+                issues: 'write',
+                pull_requests: 'read',
+              }
+            : {
+                metadata: 'read',
+                contents: 'write',
+                issues: 'write',
+                pull_requests: 'write',
+              },
         [repository.id],
       );
       return use(credential);

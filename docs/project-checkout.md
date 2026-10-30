@@ -30,7 +30,7 @@ Activation selects the corresponding native gh wrapper and pins its repository
 and permission profile; use explicit `--repo OWNER/REPO` where supported. For
 `gh api`, use repository-qualified endpoints (`repos/OWNER/REPO/...`); that command
 does not accept `--repo`.
-Cross-project requests through the pinned helper are rejected. Restart a shell
+Requests outside the primary and explicitly related repositories are rejected. Restart a shell
 without sourcing activation to leave this environment; use a fresh shell per
 project rather than stacking activations.
 
@@ -46,6 +46,36 @@ contains only configuration references and the local handoff. Never place tokens
 in project .env files, Git URLs, company knowledge, tickets or logs. Global GitHub
 credentials are not modified. This trusted same-user host helper does not isolate
 the App signing key from malicious code under that OS account.
+
+## Related repositories
+
+Prepare explicit same-organization siblings for reading code/PRs and coordinating
+through issues:
+
+```sh
+mz project checkout example-game /absolute/project/folder --delivery --related example-generator
+```
+
+Repeat `--related NAME` for up to eight explicitly named siblings. Every native
+operation still receives a token for just its target repository: the primary uses
+its selected development/delivery profile; siblings get Metadata read, Contents
+read, Issues write and Pull requests read. Unlisted repositories are rejected.
+Sibling code pushes, PR creation, secrets and workflow/settings changes are not
+granted. Read the local `.mz/COLLABORATION.md` in the project session.
+
+Activation overrides per-checkout Git helpers for the session, so `git -C SIBLING`
+cannot accidentally pick up that sibling's own delivery profile. Re-source the
+updated activation in each new session. Recognized older MZ helper/activation
+files can be upgraded; hand-edited versions are preserved and reported as a
+conflict. Reconfigure with the same explicit related list when rerunning checkout;
+changing an existing nonempty list requires reconciliation rather than silent
+permission expansion/removal. Host filesystem access remains a separate boundary.
+
+The consumer requests work through an issue in the producing project, with input,
+output and acceptance requirements. The producer links versioned outputs/artifacts
+and actual verification; the consumer integrates them and owns its PR. Automated
+generation, cross-repository workflow credentials and producer-authored PRs in the
+consumer are not configured by this option.
 
 ## Delivery permissions
 

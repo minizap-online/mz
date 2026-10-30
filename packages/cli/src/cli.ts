@@ -21,7 +21,7 @@ Usage: mz [--help | --version]
        mz guide [options]
        mz ask [--project ID] [QUESTION...]
        mz project create|attach NAME --approved
-       mz project checkout NAME DIRECTORY [--delivery] [--json]
+       mz project checkout NAME DIRECTORY [--delivery] [--related NAME] [--json]
        mz github status
        mz doctor [options]
        mz ingest FILE [options]
