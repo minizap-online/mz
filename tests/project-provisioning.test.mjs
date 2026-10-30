@@ -1,10 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, mkdir } from 'node:fs/promises';
+import {
+  mkdtemp,
+  readFile,
+  rm,
+  mkdir,
+  writeFile,
+  symlink,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import * as core from '../packages/core/dist/index.js';
+import { runOwnerConversation } from '../packages/cli/dist/conversation.js';
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'mz-provision-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -47,6 +55,64 @@ async function fixture(t) {
     },
   };
 }
+test('provisioning prepares project ask and replay repairs missing context without remote writes', async (t) => {
+  const f = await fixture(t);
+  const configFile = join(f.root, 'config/config.json');
+  await core.initializeLocalInstallation({
+    configFile,
+    companyDirectory: f.company,
+    stateDirectory: join(f.root, 'state'),
+    id: 'sample',
+    name: 'Sample',
+  });
+  const options = {
+    directory: join(f.root, 'journal'),
+    companyDirectory: f.company,
+    intent: f.intent,
+    approved: true,
+    provider: f.app,
+  };
+  const ask = () =>
+    runOwnerConversation('ask', ['--project', 'website', '--print'], {
+      env: { MZ_CONFIG_FILE: configFile },
+      terminal: false,
+    });
+  await core.provisionProject(options);
+  const result = await ask();
+  assert.equal(result.exitCode, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).request.scope, 'project:website');
+  const project = join(f.company, 'projects/website');
+  await writeFile(join(project, 'ARCHITECTURE.md'), '# Owner architecture\n');
+  await rm(join(project, 'tasks'), { recursive: true });
+  await rm(join(project, 'DECISIONS.md'));
+  await core.provisionProject(options);
+  assert.deepEqual(f.calls, ['read', 'create']);
+  assert.equal(
+    await readFile(join(project, 'ARCHITECTURE.md'), 'utf8'),
+    '# Owner architecture\n',
+  );
+  assert.equal((await ask()).exitCode, 0);
+});
+
+test('provisioning rejects a task directory symlink', async (t) => {
+  const f = await fixture(t);
+  const outside = join(f.root, 'outside');
+  await mkdir(outside);
+  await mkdir(join(f.company, 'projects/website'), { recursive: true });
+  await symlink(outside, join(f.company, 'projects/website/tasks'));
+  await assert.rejects(() =>
+    core.provisionProject({
+      directory: join(f.root, 'journal'),
+      companyDirectory: f.company,
+      intent: f.intent,
+      approved: true,
+      provider: f.app,
+    }),
+  );
+  await assert.rejects(readFile(join(outside, 'steward.md')), {
+    code: 'ENOENT',
+  });
+});
 test('provisioning requires explicit approval and durable Core intent before provider mutation', async (t) => {
   assert.equal(typeof core.provisionProject, 'function');
   const f = await fixture(t);

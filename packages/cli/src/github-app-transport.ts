@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { resolve, join, delimiter } from 'node:path';
 import { installationPaths, readLocalInstallation } from '@mz/core';
 import { appDirectory, loadAppConnection } from './github-app-store.js';
+import { deliveryAppPermissions } from '@mz/github';
+import { formatGitHubPermissions } from './github-app-output.js';
+import { apiRepository, repositoryProfile } from './project-access.js';
 import type { CliResult } from './cli.js';
 const execute = promisify(execFile);
 const quote = (s: string): string => "'" + s.replaceAll("'", "'\\''") + "'";
@@ -38,6 +41,17 @@ export function appGitEnvironment(
     quote(resolve(installationPaths(env).configFile)) +
     ' MZ_GITHUB_APP_COMPANY=' +
     quote(resolve(companyDirectory)) +
+    (env['MZ_GITHUB_REPOSITORY']
+      ? ' MZ_GITHUB_REPOSITORY=' + quote(env['MZ_GITHUB_REPOSITORY'])
+      : '') +
+    (env['MZ_GITHUB_PERMISSION_PROFILE']
+      ? ' MZ_GITHUB_PERMISSION_PROFILE=' +
+        quote(env['MZ_GITHUB_PERMISSION_PROFILE'])
+      : '') +
+    (env['MZ_GITHUB_RELATED_REPOSITORIES']
+      ? ' MZ_GITHUB_RELATED_REPOSITORIES=' +
+        quote(env['MZ_GITHUB_RELATED_REPOSITORIES'])
+      : '') +
     ' ' +
     quote(process.execPath) +
     ' ' +
@@ -114,11 +128,24 @@ export async function runGitHubAppCli(
   if (args.length === 1 && ['--help', '-h'].includes(args[0]!))
     return {
       stdout:
-        'Usage: mz github status | credential get\nApp status is read-only. credential is the native Git helper protocol; no token JSON API.\n',
+        'Usage: mz github status [--json] | permissions [--json] | credential get\nStatus/permissions default to human-readable output; --json is for agents and scripts.\nBoth are read-only. credential is the native Git helper protocol; no token JSON API.\n',
       stderr: '',
       exitCode: 0,
     };
+  const inspection = args[0] === 'status' || args[0] === 'permissions';
+  const json = inspection && args[1] === '--json';
+  if (inspection && (args.length > 2 || (args.length === 2 && !json)))
+    return {
+      stdout: '',
+      stderr: 'Usage: mz github ' + args[0] + ' [--json]\n',
+      exitCode: 2,
+    };
   try {
+    if (
+      env['MZ_GITHUB_PERMISSION_PROFILE'] !== undefined &&
+      !['development', 'delivery'].includes(env['MZ_GITHUB_PERMISSION_PROFILE'])
+    )
+      return failure;
     const saved = await selected(env);
     if (args[0] === 'gh') {
       const nativeArgs = args.slice(2);
@@ -147,15 +174,31 @@ export async function runGitHubAppCli(
       }
       if (
         !executable ||
-        !['api', 'issue', 'pr', 'repo', 'run', 'workflow', 'release'].includes(
-          nativeArgs[0] ?? '',
-        )
+        ![
+          'api',
+          'issue',
+          'pr',
+          'repo',
+          'run',
+          'workflow',
+          'release',
+          'secret',
+          'variable',
+          'label',
+        ].includes(nativeArgs[0] ?? '')
       )
         return failure;
       const explicit = nativeArgs.findIndex(
         (a) => a === '-R' || a === '--repo',
       );
-      let target = explicit >= 0 ? nativeArgs[explicit + 1] : env['GH_REPO'];
+      const inline = nativeArgs.find((a) => a.startsWith('--repo='))?.slice(7);
+      let target =
+        explicit >= 0
+          ? nativeArgs[explicit + 1]
+          : (inline ??
+            apiRepository(nativeArgs) ??
+            env['MZ_GITHUB_REPOSITORY'] ??
+            env['GH_REPO']);
       if (!target) {
         const remote = await execute('git', ['remote', 'get-url', 'origin'], {
           cwd: process.cwd(),
@@ -193,21 +236,48 @@ export async function runGitHubAppCli(
             child.once('error', reject);
             child.once('exit', (code) => resolve(code ?? 1));
           }),
+        repositoryProfile(env, saved.connection.organization, target!),
       );
       return { stdout: '', stderr: '', exitCode: code };
     }
-    if (args[0] === 'status' && args.length === 1) {
+    if (args[0] === 'status') {
       await saved.app.verify();
       return {
-        stdout:
-          JSON.stringify({
-            connected: true,
-            identity: 'github-app',
-            organization: saved.connection.organization,
-            appId: saved.connection.appId,
-            installationId: saved.connection.installationId,
-            protectedOwnerId: saved.connection.ownerId,
-          }) + '\n',
+        stdout: json
+          ? JSON.stringify({
+              connected: true,
+              identity: 'github-app',
+              organization: saved.connection.organization,
+              appId: saved.connection.appId,
+              installationId: saved.connection.installationId,
+              protectedOwnerId: saved.connection.ownerId,
+            }) + '\n'
+          : 'GitHub App connected to ' +
+            saved.connection.organization +
+            '.\nOrganization owner access is verified.\nCheck delivery access: mz github permissions\n',
+        stderr: '',
+        exitCode: 0,
+      };
+    }
+    if (args[0] === 'permissions') {
+      const access = await saved.app.getAccess();
+      return {
+        stdout: json
+          ? JSON.stringify({
+              ...access,
+              desiredAppPermissions: deliveryAppPermissions,
+              settings:
+                'https://github.com/organizations/' +
+                saved.connection.organization +
+                '/settings/apps',
+              next: access.deliveryReady
+                ? 'Delivery ready. Prepare the project with mz project checkout NAME DIRECTORY --delivery.'
+                : (access.registrationMissing.length
+                    ? 'In the existing organization-owned MZ App, Permissions & events, add the registrationMissing grants using desiredAppPermissions. Keep approved existing repository grants. '
+                    : 'The App registration has the required delivery grants. ') +
+                  'Approve the updated installation in organization Settings > GitHub Apps. No new App or key is needed.',
+            }) + '\n'
+          : formatGitHubPermissions(saved.connection.organization, access),
         stderr: '',
         exitCode: 0,
       };
@@ -242,11 +312,15 @@ export async function runGitHubAppCli(
         parts[0]!.toLowerCase() !== saved.connection.organization.toLowerCase()
       )
         throw new Error();
-      return await saved.app.withRepositoryToken(parts[1]!, async (token) => ({
-        stdout: 'username=x-access-token\npassword=' + token + '\n\n',
-        stderr: '',
-        exitCode: 0,
-      }));
+      return await saved.app.withRepositoryToken(
+        parts[1]!,
+        async (token) => ({
+          stdout: 'username=x-access-token\npassword=' + token + '\n\n',
+          stderr: '',
+          exitCode: 0,
+        }),
+        repositoryProfile(env, saved.connection.organization, parts.join('/')),
+      );
     }
     return {
       stdout: '',

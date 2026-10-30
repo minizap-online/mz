@@ -8,10 +8,16 @@ export type AppRequest = (
 ) => Promise<unknown>;
 export class GitHubAppError extends Error {
   constructor(
-    readonly code: 'ACCESS' | 'NOT_FOUND' | 'UNAVAILABLE' = 'ACCESS',
+    readonly code:
+      | 'ACCESS'
+      | 'NOT_FOUND'
+      | 'UNAVAILABLE'
+      | 'DELIVERY_UNAVAILABLE' = 'ACCESS',
   ) {
     super(
-      'GitHub App access unavailable; check installation, owner identity and approved permissions.',
+      code === 'DELIVERY_UNAVAILABLE'
+        ? 'Project delivery permissions are not installed. Run mz github permissions and accept the expanded App grants in GitHub.'
+        : 'GitHub App access unavailable; check installation, owner identity and approved permissions.',
     );
     this.name = 'GitHubAppError';
   }

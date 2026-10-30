@@ -19,6 +19,9 @@ See [workflow](../workflow.md), [milestones](../milestones.md) and [template](..
 | [FR-013](FR-013.md)   | GitHub organization bootstrap                            | [M-00](../milestones.md#m-00) | None               |
 | [FR-014](FR-014.md)   | Guided devbox installation and company onboarding        | [M-05](../milestones.md#m-05) | None               |
 | [FR-015](FR-015.md)   | Organization-owned GitHub App and protected owner access | [M-05](../milestones.md#m-05) | None               |
+| [FR-016](FR-016.md)   | Conversational project repair and onboarding             | [M-05](../milestones.md#m-05) | None               |
+| [FR-017](FR-017.md)   | Prepared checkouts and repository delivery credentials   | [M-05](../milestones.md#m-05) | None               |
+| [FR-018](FR-018.md)   | Related-project code reading and issue coordination      | [M-05](../milestones.md#m-05) | None               |
 | [CR-001](CR-001.md)   | Ticket workflow and organization target                  | [M-00](../milestones.md#m-00) | None               |
 | [CR-002](CR-002.md)   | GitHub work authority and runtime boundary               | [M-00](../milestones.md#m-00) | None               |
 | [CR-003](CR-003.md)   | MIT attribution to expeter                               | [M-00](../milestones.md#m-00) | None               |
@@ -26,6 +29,8 @@ See [workflow](../workflow.md), [milestones](../milestones.md) and [template](..
 | [BUG-001](BUG-001.md) | Scoped GitHub authentication and permission explanation  | [M-05](../milestones.md#m-05) | None               |
 | [BUG-002](BUG-002.md) | GitHub SSH URL compatibility in App onboarding           | [M-05](../milestones.md#m-05) | None               |
 | [CR-005](CR-005.md)   | SSH forwarding command in remote App setup               | [M-05](../milestones.md#m-05) | None               |
+| [CR-006](CR-006.md)   | Human-readable commands with explicit JSON mode          | [M-05](../milestones.md#m-05) | None               |
 | [BUG-003](BUG-003.md) | Valid inactive webhook URL and rejected-form retry       | [M-05](../milestones.md#m-05) | None               |
 | [BUG-004](BUG-004.md) | Git credential arrays and saved App resume               | [M-05](../milestones.md#m-05) | None               |
 | [BUG-005](BUG-005.md) | Company control and project implementation boundary      | [M-05](../milestones.md#m-05) | None               |
+| [BUG-006](BUG-006.md) | Provisioned project steward context                      | [M-05](../milestones.md#m-05) | None               |

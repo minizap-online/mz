@@ -8,6 +8,48 @@ export const appPermissions = Object.freeze({
   members: 'read',
 } as const);
 export type Permissions = Record<string, string>;
+export const repositoryDeliveryPermissions = Object.freeze({
+  metadata: 'read',
+  contents: 'write',
+  issues: 'write',
+  pull_requests: 'write',
+  actions: 'write',
+  workflows: 'write',
+  administration: 'write',
+  environments: 'write',
+  deployments: 'write',
+  pages: 'write',
+  secrets: 'write',
+  actions_variables: 'write',
+  checks: 'write',
+  statuses: 'write',
+} as const);
+export const deliveryAppPermissions = Object.freeze({
+  ...appPermissions,
+  ...repositoryDeliveryPermissions,
+} as const);
+export const optionalRepositoryPermissions = Object.freeze({
+  artifact_metadata: 'write',
+  merge_queues: 'write',
+  packages: 'write',
+  repository_hooks: 'write',
+  repository_projects: 'admin',
+} as const);
+export function checkAppPermissions(value: unknown): Permissions {
+  const actual = object(value) as Permissions;
+  const allowed: Permissions = {
+    ...deliveryAppPermissions,
+    ...optionalRepositoryPermissions,
+  };
+  if (
+    Object.entries(appPermissions).some(
+      ([key, grant]) => actual[key] !== grant,
+    ) ||
+    Object.entries(actual).some(([key, grant]) => allowed[key] !== grant)
+  )
+    throw new Error('GitHub permissions differ from the approved profile.');
+  return actual;
+}
 export interface AppConnection {
   schemaVersion: 1;
   appId: number;

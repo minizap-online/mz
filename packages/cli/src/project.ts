@@ -7,13 +7,15 @@ import {
   provisionProject,
 } from '@mz/core';
 import { loadAppConnection } from './github-app-store.js';
+import { runProjectCheckout } from './project-checkout.js';
 import type { AppRequest } from '@mz/github';
 import type { CliResult } from './cli.js';
-const help = `Usage: mz project create|attach NAME --approved [--public] [--action UUID]\n\nOwner/steward API for an explicitly authorized repository provisioning request.\nUses the configured organization-owned GitHub App; default private.\nNo new personal token. Preserve owner knowledge. No deployment or spending.\nRepeated action IDs resume local publication; uncertain creates need explicit attach.\nThis command trusts its host operator; --approved is not an untrusted-worker authorization mechanism.\n`;
+const help = `Usage: mz project create|attach NAME --approved [--public] [--action UUID]\n       mz project checkout NAME DIRECTORY [--delivery] [--related NAME] [--json]\n\nCreate/attach uses the configured organization-owned GitHub App; default private.\nCheckout prepares local Git credentials, .mz/activate and create-missing-only AGENTS.md.\nActivate the project environment before starting Codex or gh. No token values are stored.\n--delivery requires expanded installed grants; run mz github permissions for upgrade details.\nNo deployment or spending. Existing project instructions are preserved.\nRepeated provisioning action IDs resume local publication; uncertain creates need explicit attach.\nThis command trusts its host operator; --approved is not an untrusted-worker authorization mechanism.\n`;
 export async function runProjectCli(
   args: readonly string[],
   host: { env?: NodeJS.ProcessEnv; request?: AppRequest } = {},
 ): Promise<CliResult> {
+  if (args[0] === 'checkout') return runProjectCheckout(args.slice(1), host);
   if (args.length === 1 && ['--help', '-h'].includes(args[0]!))
     return { stdout: help, stderr: '', exitCode: 0 };
   let operation: 'create' | 'attach',

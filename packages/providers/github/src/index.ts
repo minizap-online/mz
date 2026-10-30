@@ -178,8 +178,11 @@ export function createGitHubProviderSkeleton(
 export { createGitHubApp, type GitHubApp, type AppRepository } from './app.js';
 export {
   appPermissions,
+  deliveryAppPermissions,
+  repositoryDeliveryPermissions,
   validateAppConnection,
   type AppConnection,
+  type Permissions,
 } from './app-policy.js';
 export {
   GitHubAppError,

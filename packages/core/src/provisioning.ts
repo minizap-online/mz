@@ -81,6 +81,7 @@ async function publishKnowledge(
     companyDirectory,
     join(companyDirectory, 'projects'),
     join(companyDirectory, 'projects', value.projectId),
+    join(companyDirectory, 'projects', value.projectId, 'tasks'),
   ]) {
     if (!(await exists(directory))) await mkdir(directory, { mode: 0o700 });
     const info = await lstat(directory);
@@ -111,6 +112,14 @@ async function publishKnowledge(
       '# Project\n\nRepository provisioning was authorized. Record the owner-approved purpose, scope, team and delivery brief here before development.\n',
     'STATUS.md':
       '# Status\n\nRepository connected. Development and deployment acceptance remain pending.\n',
+    'ARCHITECTURE.md':
+      '# Architecture\n\nRecord the agreed architecture after the project brief is established.\n',
+    'DECISIONS.md':
+      '# Decisions\n\nRecord accepted project decisions and their rationale here.\n',
+    'tasks/steward.md':
+      '---\nrole: steward\nproject: ' +
+      value.projectId +
+      '\n---\n# Project steward\n\nRead the project context, clarify the owner brief and coordinate approved work through the project repository and its issue tracker. Preserve existing knowledge and report actual development and deployment progress.\n',
   };
   for (const [name, text] of Object.entries(files)) {
     const path = join(root, name);
@@ -144,6 +153,7 @@ async function publishKnowledge(
       await file.close();
     }
   }
+  await stewardSync(join(root, 'tasks'));
   await stewardSync(root);
   await stewardSync(join(companyDirectory, 'projects'));
 }
