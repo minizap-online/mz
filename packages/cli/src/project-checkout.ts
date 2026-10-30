@@ -74,20 +74,22 @@ export async function runProjectCheckout(
   args: readonly string[],
   host: { env?: NodeJS.ProcessEnv; request?: AppRequest } = {},
 ): Promise<CliResult> {
-  const [name, input, flag] = args;
+  const [name, input, ...flags] = args;
   if (
     !name ||
     !/^[a-z][a-z0-9-]{0,63}$/.test(name) ||
     !input ||
-    args.length > 3 ||
-    (flag !== undefined && flag !== '--delivery')
+    input.startsWith('-') ||
+    new Set(flags).size !== flags.length ||
+    flags.some((flag) => flag !== '--delivery' && flag !== '--json')
   )
     return {
       stdout: '',
-      stderr: 'Usage: mz project checkout NAME DIRECTORY [--delivery]\n',
+      stderr:
+        'Usage: mz project checkout NAME DIRECTORY [--delivery] [--json]\n',
       exitCode: 2,
     };
-  const profile = flag === '--delivery' ? 'delivery' : 'development';
+  const profile = flags.includes('--delivery') ? 'delivery' : 'development';
   const env = host.env ?? process.env;
   try {
     const settings = await readLocalInstallation({
@@ -362,19 +364,38 @@ export async function runProjectCheckout(
         await file.close();
       }
     }
+    const result = {
+      repository,
+      directory,
+      profile,
+      deliveryReady: access.deliveryReady,
+      activate: 'cd ' + quote(directory) + ' && source .mz/activate',
+      start:
+        "codex 'Read AGENTS.md and .mz/HANDOFF.md, then help me plan the project through GitHub tickets.'",
+      development: 'ready-for-owner-prompt',
+      deployment: 'not-configured',
+    };
     return {
-      stdout:
-        JSON.stringify({
-          repository,
-          directory,
-          profile,
-          deliveryReady: access.deliveryReady,
-          activate: 'cd ' + quote(directory) + ' && source .mz/activate',
-          start:
-            "codex 'Read AGENTS.md and .mz/HANDOFF.md, then help me plan the project through GitHub tickets.'",
-          development: 'ready-for-owner-prompt',
-          deployment: 'not-configured',
-        }) + '\n',
+      stdout: flags.includes('--json')
+        ? JSON.stringify(result) + '\n'
+        : 'Prepared ' +
+          repository +
+          ' in ' +
+          directory +
+          '.\n' +
+          'Ticket workflow: GitHub Issues, milestones and verification.\n' +
+          (profile === 'delivery'
+            ? 'Delivery credentials are enabled.\n'
+            : 'Development credentials are enabled. For workflows and deployment setup, use --delivery.\n') +
+          (!access.deliveryReady
+            ? 'Check the required GitHub permission update: mz github permissions\n'
+            : '') +
+          '\nStart a project session:\n  ' +
+          result.activate +
+          '\n  ' +
+          result.start +
+          '\n' +
+          '\nExisting project instructions were preserved. No product code was implemented or deployed.\n',
       stderr: '',
       exitCode: 0,
     };

@@ -92,11 +92,28 @@ async function fixture(t) {
 }
 test('checkout prepares repository-local renewable credentials and ticket instructions without saving tokens', async (t) => {
   const f = await fixture(t);
-  const result = await runProjectCli(['checkout', 'game', f.directory], f);
+  const result = await runProjectCli(
+    ['checkout', 'game', f.directory, '--json'],
+    f,
+  );
   assert.equal(result.exitCode, 0, result.stderr);
   const data = JSON.parse(result.stdout);
   assert.equal(data.repository, 'sample-org/game');
   assert.equal(data.deliveryReady, false);
+  assert.equal(
+    (
+      await runProjectCli(
+        ['checkout', 'game', f.directory, '--json', '--json'],
+        f,
+      )
+    ).exitCode,
+    2,
+  );
+  assert.equal(
+    (await runProjectCli(['checkout', 'game', f.directory, '--unknown'], f))
+      .exitCode,
+    2,
+  );
   const agents = await readFile(join(f.directory, 'AGENTS.md'), 'utf8');
   assert.match(agents, /GitHub Issues/);
   assert.match(agents, /milestone/i);
@@ -302,9 +319,30 @@ test('project native clients reject cross-project requests and use renewed App t
     ).exitCode,
     0,
   );
-  const upgrade = await runGitHubAppCli(['permissions'], env);
+  const upgrade = await runGitHubAppCli(['permissions', '--json'], env);
   assert.equal(upgrade.exitCode, 0);
   assert.ok(JSON.parse(upgrade.stdout).missing.includes('workflows'));
+  const human = await runGitHubAppCli(['permissions'], env);
+  assert.equal(human.exitCode, 0);
+  assert.match(human.stdout, /Checks: Read and write/);
+  assert.match(human.stdout, /App registration/);
+  assert.match(human.stdout, /installation/i);
+  assert.doesNotMatch(
+    human.stdout,
+    /desiredAppPermissions|actions_variables|^\{/,
+  );
+  const status = await runGitHubAppCli(['status'], env);
+  assert.match(status.stdout, /connected to sample-org/);
+  const statusJson = await runGitHubAppCli(['status', '--json'], env);
+  assert.equal(JSON.parse(statusJson.stdout).connected, true);
+  assert.equal(
+    (await runGitHubAppCli(['status', '--json', '--json'], env)).exitCode,
+    2,
+  );
+  const prepared = await runProjectCli(['checkout', 'game', f.directory], f);
+  assert.equal(prepared.exitCode, 0, prepared.stderr);
+  assert.match(prepared.stdout, /source .mz\/activate/);
+  assert.doesNotMatch(prepared.stdout, /^\{/);
   assert.equal(
     (
       await runGitHubAppCli(['permissions'], {

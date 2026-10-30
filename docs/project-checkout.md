@@ -49,6 +49,19 @@ the App signing key from malicious code under that OS account.
 
 ## Delivery permissions
 
+Owner-facing checkout, GitHub status and permission commands print readable
+summaries by default. Agents and scripts should explicitly request `--json`:
+
+```sh
+mz github permissions --json
+mz github status --json
+mz project checkout example-game /absolute/project/folder --delivery --json
+```
+
+The JSON success objects retain their existing fields. Format selection does not
+depend on a TTY; errors still use stderr and nonzero exit codes. Native gh JSON
+options and Git's credential protocol are separate and unchanged.
+
 ```sh
 mz github permissions
 ```

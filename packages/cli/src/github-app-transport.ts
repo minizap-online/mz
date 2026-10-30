@@ -8,6 +8,7 @@ import { resolve, join, delimiter } from 'node:path';
 import { installationPaths, readLocalInstallation } from '@mz/core';
 import { appDirectory, loadAppConnection } from './github-app-store.js';
 import { deliveryAppPermissions } from '@mz/github';
+import { formatGitHubPermissions } from './github-app-output.js';
 import type { CliResult } from './cli.js';
 const execute = promisify(execFile);
 const quote = (s: string): string => "'" + s.replaceAll("'", "'\\''") + "'";
@@ -122,9 +123,17 @@ export async function runGitHubAppCli(
   if (args.length === 1 && ['--help', '-h'].includes(args[0]!))
     return {
       stdout:
-        'Usage: mz github status | permissions | credential get\nStatus/permissions are read-only. credential is the native Git helper protocol; no token JSON API.\n',
+        'Usage: mz github status [--json] | permissions [--json] | credential get\nStatus/permissions default to human-readable output; --json is for agents and scripts.\nBoth are read-only. credential is the native Git helper protocol; no token JSON API.\n',
       stderr: '',
       exitCode: 0,
+    };
+  const inspection = args[0] === 'status' || args[0] === 'permissions';
+  const json = inspection && args[1] === '--json';
+  if (inspection && (args.length > 2 || (args.length === 2 && !json)))
+    return {
+      stdout: '',
+      stderr: 'Usage: mz github ' + args[0] + ' [--json]\n',
+      exitCode: 2,
     };
   try {
     if (
@@ -230,40 +239,44 @@ export async function runGitHubAppCli(
       );
       return { stdout: '', stderr: '', exitCode: code };
     }
-    if (args[0] === 'status' && args.length === 1) {
+    if (args[0] === 'status') {
       await saved.app.verify();
       return {
-        stdout:
-          JSON.stringify({
-            connected: true,
-            identity: 'github-app',
-            organization: saved.connection.organization,
-            appId: saved.connection.appId,
-            installationId: saved.connection.installationId,
-            protectedOwnerId: saved.connection.ownerId,
-          }) + '\n',
+        stdout: json
+          ? JSON.stringify({
+              connected: true,
+              identity: 'github-app',
+              organization: saved.connection.organization,
+              appId: saved.connection.appId,
+              installationId: saved.connection.installationId,
+              protectedOwnerId: saved.connection.ownerId,
+            }) + '\n'
+          : 'GitHub App connected to ' +
+            saved.connection.organization +
+            '.\nOrganization owner access is verified.\nCheck delivery access: mz github permissions\n',
         stderr: '',
         exitCode: 0,
       };
     }
-    if (args[0] === 'permissions' && args.length === 1) {
+    if (args[0] === 'permissions') {
       const access = await saved.app.getAccess();
       return {
-        stdout:
-          JSON.stringify({
-            ...access,
-            desiredAppPermissions: deliveryAppPermissions,
-            settings:
-              'https://github.com/organizations/' +
-              saved.connection.organization +
-              '/settings/apps',
-            next: access.deliveryReady
-              ? 'Delivery ready. Prepare the project with mz project checkout NAME DIRECTORY --delivery.'
-              : (access.registrationMissing.length
-                  ? 'In the existing organization-owned MZ App, Permissions & events, add the registrationMissing grants using desiredAppPermissions. Keep approved existing repository grants. '
-                  : 'The App registration has the required delivery grants. ') +
-                'Approve the updated installation in organization Settings > GitHub Apps. No new App or key is needed.',
-          }) + '\n',
+        stdout: json
+          ? JSON.stringify({
+              ...access,
+              desiredAppPermissions: deliveryAppPermissions,
+              settings:
+                'https://github.com/organizations/' +
+                saved.connection.organization +
+                '/settings/apps',
+              next: access.deliveryReady
+                ? 'Delivery ready. Prepare the project with mz project checkout NAME DIRECTORY --delivery.'
+                : (access.registrationMissing.length
+                    ? 'In the existing organization-owned MZ App, Permissions & events, add the registrationMissing grants using desiredAppPermissions. Keep approved existing repository grants. '
+                    : 'The App registration has the required delivery grants. ') +
+                  'Approve the updated installation in organization Settings > GitHub Apps. No new App or key is needed.',
+            }) + '\n'
+          : formatGitHubPermissions(saved.connection.organization, access),
         stderr: '',
         exitCode: 0,
       };
