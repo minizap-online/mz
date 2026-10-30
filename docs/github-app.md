@@ -26,9 +26,26 @@ The current steward is a trusted host operator. Owner-only files and prompts do 
 
 ## Project workflow
 
+FR-017 adds [prepared checkouts and an explicit repository delivery profile](project-checkout.md).
+The original profile described above remains valid. Only an explicit delivery
+upgrade adds repository Administration, Actions, Workflows, Environments,
+Deployments, Pages, Secrets, Variables, Checks and Commit statuses write. Worker
+tokens remain restricted to one repository and exclude organization grants.
+Run `mz github permissions` before changing the existing App's grants; GitHub
+installation approval remains required. Default init still requests the original
+profile and does not silently expand authority.
+
 Tell the steward what to build through `mz guide` / `mz ask`. It can use `mz project --help` to prepare an owner-authorized create/attach operation. The advanced API is `mz project create NAME --approved`, default private; `--public` additionally selects explicitly approved public visibility. `--approved` is the trusted host operator's assertion about the owner's request, not a security gate for an untrusted worker. Project names use lowercase slugs.
 
 MZ creates the repository, records durable structural action evidence through Core, and adds repository references and initial project notes under company `projects/NAME/` while preserving existing owner knowledge. Repository provisioning does not prove development, deployment or the complete website brief. The owner/steward still records purpose, scope and actual project activation/context; no DNS, spending or deployment occurs just from repository creation.
+
+Provisioning seeds the project configuration, brief, architecture, status, decisions
+and steward task needed by `mz ask --project NAME`. After updating MZ, rerun the
+same successful create/attach command (with the original `--action` if supplied)
+to fill missing context files in older projects. A recorded successful action is
+replayed locally without another repository creation; existing owner notes are
+preserved. This recovery does not apply to uncertain remote outcomes, which still
+require the explicit reconciliation described below.
 
 Retries use a stable action identity, optionally supplied with `--action UUID`. Core's version1 private provisioning journal is under the configured source-storage directory, outside Git; intent, attempted mutation and successful outcome are immutable files. The new format has no predecessor to migrate, and rejects unsupported versions; it does not add an editable task tracker or store secret/content payloads in SQLite. Permission/audit failures do not cause remote writes. If the remote may have created a repository before a timeout or local result persistence failure, MZ blocks another create attempt under that action. Inspect the repository and explicitly authorize `mz project attach NAME --approved` to reconcile. It never adopts an unrelated same-name repository or automatically deletes resources as rollback.
 

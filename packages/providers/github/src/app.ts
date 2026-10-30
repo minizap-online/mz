@@ -1,6 +1,8 @@
 import {
-  appPermissions,
   checkPermissions,
+  checkAppPermissions,
+  repositoryDeliveryPermissions,
+  optionalRepositoryPermissions,
   githubName,
   numericId,
   object,
@@ -84,9 +86,9 @@ export function createGitHubApp(options: {
       throw new GitHubAppError();
     return result['token'];
   }
-  async function verifyInstallation(): Promise<void> {
+  async function verifyInstallation(): Promise<Permissions> {
     const app = await call('GET', '/app');
-    checkPermissions(app['permissions'], appPermissions);
+    checkAppPermissions(app['permissions']);
     const owner = object(app['owner']);
     if (
       app['id'] !== c.appId ||
@@ -98,7 +100,7 @@ export function createGitHubApp(options: {
       'GET',
       '/app/installations/' + c.installationId,
     );
-    checkPermissions(installation['permissions'], appPermissions);
+    const granted = checkAppPermissions(installation['permissions']);
     const account = object(installation['account']);
     if (
       installation['id'] !== c.installationId ||
@@ -110,9 +112,10 @@ export function createGitHubApp(options: {
       installation['suspended_at'] !== null
     )
       throw new GitHubAppError();
+    return granted;
   }
-  async function verify(): Promise<void> {
-    await verifyInstallation();
+  async function verify(): Promise<Permissions> {
+    const granted = await verifyInstallation();
     const auth = await token({ members: 'read' });
     const member = object(
       await request(
@@ -128,6 +131,7 @@ export function createGitHubApp(options: {
       object(member['user'])['id'] !== c.ownerId
     )
       throw new GitHubAppError();
+    return granted;
   }
   function repo(value: unknown, name: string): AppRepository {
     const r = object(value);
@@ -161,19 +165,55 @@ export function createGitHubApp(options: {
   return Object.freeze({
     connection: c,
     verify,
+    async getAccess() {
+      const granted = await verify();
+      const missing = Object.entries(repositoryDeliveryPermissions)
+        .filter(([key, value]) => granted[key] !== value)
+        .map(([key]) => key);
+      const app = await call('GET', '/app');
+      const registered = checkAppPermissions(app['permissions']);
+      const registrationMissing = Object.entries(repositoryDeliveryPermissions)
+        .filter(([key, value]) => registered[key] !== value)
+        .map(([key]) => key);
+      return {
+        deliveryReady: missing.length === 0 && registrationMissing.length === 0,
+        missing,
+        registrationMissing,
+      };
+    },
     getRepository,
     async withRepositoryToken<T>(
       name: string,
       use: (token: string) => Promise<T>,
+      profile: 'development' | 'delivery' = 'development',
     ): Promise<T> {
+      if (!['development', 'delivery'].includes(profile))
+        throw new GitHubAppError();
+      const granted = profile === 'delivery' ? await verify() : null;
+      if (
+        granted &&
+        Object.entries(repositoryDeliveryPermissions).some(
+          ([key, value]) => granted[key] !== value,
+        )
+      )
+        throw new GitHubAppError('DELIVERY_UNAVAILABLE');
       const repository = await getRepository(name);
       const credential = await token(
-        {
-          metadata: 'read',
-          contents: 'write',
-          issues: 'write',
-          pull_requests: 'write',
-        },
+        profile === 'delivery'
+          ? {
+              ...repositoryDeliveryPermissions,
+              ...Object.fromEntries(
+                Object.entries(optionalRepositoryPermissions).filter(
+                  ([key, value]) => granted?.[key] === value,
+                ),
+              ),
+            }
+          : {
+              metadata: 'read',
+              contents: 'write',
+              issues: 'write',
+              pull_requests: 'write',
+            },
         [repository.id],
       );
       return use(credential);

@@ -112,7 +112,9 @@ for (const [label, overrides] of Object.entries({
   members: {
     installation: { permissions: { ...permissions, members: 'write' } },
   },
-  admin: { app: { permissions: { ...permissions, administration: 'write' } } },
+  invalid_admin: {
+    app: { permissions: { ...permissions, administration: 'admin' } },
+  },
   unknown: { app: { permissions: { ...permissions, emails: 'read' } } },
   wrong_org: { installation: { account: { id: 100, type: 'Organization' } } },
   not_owner: { owner: { role: 'member' } },
@@ -147,6 +149,110 @@ test('repository token explicitly narrows permissions and IDs and is never a bro
   });
   assert.ok(!last.body.permissions.members);
   assert.ok(!last.body.permissions.repository_creation);
+});
+const deliveryPermissions = {
+  metadata: 'read',
+  contents: 'write',
+  issues: 'write',
+  pull_requests: 'write',
+  actions: 'write',
+  workflows: 'write',
+  administration: 'write',
+  environments: 'write',
+  deployments: 'write',
+  pages: 'write',
+  secrets: 'write',
+  actions_variables: 'write',
+  checks: 'write',
+  statuses: 'write',
+};
+test('delivery tokens have full delivery permissions for exactly one repository and renew per operation', async () => {
+  const expanded = { ...permissions, ...deliveryPermissions };
+  const f = fixture({
+    app: { permissions: expanded },
+    installation: { permissions: expanded },
+  });
+  const app = f.make();
+  for (let i = 0; i < 2; i++)
+    await app.withRepositoryToken('website', async () => true, 'delivery');
+  const tokens = f.calls.filter(
+    (c) => c.path.endsWith('/access_tokens') && c.body.repository_ids,
+  );
+  assert.equal(tokens.length, 2);
+  assert.deepEqual(tokens[0].body, {
+    repository_ids: [11],
+    permissions: deliveryPermissions,
+  });
+  assert.equal(tokens[0].body.permissions.organization_projects, undefined);
+  assert.equal(tokens[0].body.permissions.members, undefined);
+});
+test('delivery upgrade is explicit and legacy connections remain usable while approval is pending', async () => {
+  const f = fixture({
+    app: { permissions: { ...permissions, ...deliveryPermissions } },
+  });
+  await f.make().withRepositoryToken('website', async () => true);
+  let used = false;
+  await assert.rejects(
+    () =>
+      f.make().withRepositoryToken(
+        'website',
+        async () => {
+          used = true;
+        },
+        'delivery',
+      ),
+    { code: 'DELIVERY_UNAVAILABLE' },
+  );
+  assert.equal(used, false);
+  const access = await f.make().getAccess();
+  assert.equal(access.deliveryReady, false);
+  assert.ok(access.missing.includes('workflows'));
+});
+test('canonical GitHub delivery grants and known repository extensions preserve basic access during an upgrade', async () => {
+  const actual = {
+    ...permissions,
+    actions: 'write',
+    actions_variables: 'write',
+    administration: 'write',
+    artifact_metadata: 'write',
+    deployments: 'write',
+    environments: 'write',
+    merge_queues: 'write',
+    packages: 'write',
+    pages: 'write',
+    repository_hooks: 'write',
+    repository_projects: 'admin',
+    secrets: 'write',
+    statuses: 'write',
+    workflows: 'write',
+  };
+  const f = fixture({
+    app: { permissions: actual },
+    installation: { permissions: actual },
+  });
+  assert.equal(
+    await f.make().withRepositoryToken('website', async () => true),
+    true,
+  );
+  assert.deepEqual((await f.make().getAccess()).missing, ['checks']);
+  assert.deepEqual((await f.make().getAccess()).registrationMissing, [
+    'checks',
+  ]);
+  const upgraded = fixture({
+    app: { permissions: { ...actual, checks: 'write' } },
+    installation: { permissions: { ...actual, checks: 'write' } },
+  });
+  await upgraded
+    .make()
+    .withRepositoryToken('website', async () => true, 'delivery');
+  const request = upgraded.calls
+    .filter((c) => c.path.endsWith('/access_tokens') && c.body.repository_ids)
+    .at(-1);
+  assert.equal(request.body.permissions.actions_variables, 'write');
+  assert.equal(request.body.permissions.repository_hooks, 'write');
+  assert.equal(request.body.permissions.repository_projects, 'admin');
+  assert.equal(request.body.permissions.organization_projects, undefined);
+  assert.equal(request.body.permissions.members, undefined);
 });
 for (const [label, token] of Object.entries({
   expired: { expires_at: '2020-01-01' },

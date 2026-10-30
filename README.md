@@ -51,6 +51,8 @@ Unsupported commands or additional arguments exit with status 2. Diagnostics nev
 
 See [architecture](docs/architecture.md), [contributing](CONTRIBUTING.md), and [ticket workflow](docs/workflow.md). Keep company configuration and credentials outside this public implementation repository.
 
+For owner-prepared developer workspaces, see [project checkouts and renewable delivery credentials](docs/project-checkout.md).
+
 ## License and attribution
 
 Copyright (c) 2026 [expeter](https://github.com/expeter). Licensed under the [MIT License](LICENSE), which requires retaining the copyright and permission notices in copies or substantial portions of the software.
